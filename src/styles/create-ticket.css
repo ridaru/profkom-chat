@@ -1,0 +1,247 @@
+.ctm-overlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.28);
+    backdrop-filter: blur(6px);
+    z-index: 1000;
+
+    /* чтобы на маленьких экранах можно было скроллить всю модалку */
+    overflow: auto;
+    padding: 18px;
+    display: grid;
+    place-items: center;
+}
+
+.ctm{
+    width: min(1040px, 100%);
+    max-height: calc(100vh - 36px);
+
+    background: #fff;
+    border: 1px solid rgba(0,0,0,.10);
+    border-radius: 18px;
+    box-shadow: 0 22px 70px rgba(0,0,0,.18);
+    overflow: hidden;
+
+    display: flex;
+    flex-direction: column;
+}
+
+.ctm__head{
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(0,0,0,.10);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex: 0 0 auto;
+}
+
+.ctm__title{
+    font-weight: 900;
+    font-size: 18px;
+    color: #111;
+}
+
+.ctm__sub{
+    margin-top: 2px;
+    font-size: 13px;
+    color: rgba(17,17,17,.62);
+}
+
+.ctm__x{
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,.10);
+    background: rgba(0,0,0,.03);
+    cursor: pointer;
+    font-weight: 900;
+}
+
+.ctm__form{
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+/* ✅ главное: скроллится только тело */
+.ctm__body{
+    padding: 16px;
+    overflow: auto;
+    min-height: 0;
+    flex: 1 1 auto;
+}
+
+.ctm__grid{
+    display: grid;
+    grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+    gap: 12px;
+}
+
+.ctm__label{
+    display: grid;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 800;
+    color: rgba(17,17,17,.80);
+}
+
+.ctm__label--wide{
+    grid-column: 1 / -1;
+}
+
+.ctm__input{
+    height: 44px;
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,.12);
+    background: #fff;
+    padding: 0 12px;
+    outline: none;
+}
+
+.ctm__ta{
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,.12);
+    background: #fff;
+    padding: 10px 12px;
+    outline: none;
+    resize: vertical;
+    min-height: 96px;
+}
+
+.ctm__input:focus,
+.ctm__ta:focus{
+    border-color: rgba(111,55,255,.55);
+    box-shadow: 0 0 0 3px rgba(111,55,255,.14);
+}
+
+.ctm__section{
+    grid-column: 1 / -1;
+    margin-top: 6px;
+    font-weight: 900;
+    color: rgba(17,17,17,.86);
+}
+
+/* чекбоксы */
+.ctm__check{
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(17,17,17,.78);
+}
+
+.ctm__check input{
+    margin-top: 3px;
+}
+
+/* ошибки */
+.ctm__err{
+    grid-column: 1 / -1;
+    color: #8b0024;
+    background: rgba(250, 35, 90, 0.10);
+    border: 1px solid rgba(250, 35, 90, 0.25);
+    border-radius: 12px;
+    padding: 8px 10px;
+    font-weight: 700;
+}
+
+/* инфоблоки подсказок */
+.ctm__info{
+    grid-column: 1 / -1;
+    border: 1px solid rgba(0,0,0,.10);
+    background: rgba(0,0,0,.03);
+    border-radius: 14px;
+    padding: 12px;
+}
+
+.ctm__infoTitle{
+    font-weight: 900;
+    margin-bottom: 6px;
+}
+
+.ctm__infoList{
+    margin: 0;
+    padding-left: 18px;
+    color: rgba(17,17,17,.76);
+    line-height: 1.4;
+    font-size: 13px;
+}
+
+.ctm__hint{
+    grid-column: 1 / -1;
+    border: 1px dashed rgba(0,0,0,.18);
+    background: #fff;
+    border-radius: 14px;
+    padding: 10px 12px;
+    color: rgba(17,17,17,.78);
+    font-size: 13px;
+}
+
+/* предпросмотр */
+.ctm__preview{
+    grid-column: 1 / -1;
+    border: 1px solid rgba(0,0,0,.10);
+    background: rgba(0,0,0,.02);
+    border-radius: 14px;
+    padding: 12px;
+}
+
+.ctm__previewTitle{
+    font-weight: 900;
+    margin-bottom: 8px;
+}
+
+.ctm__pre{
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 12px;
+    line-height: 1.4;
+    color: rgba(17,17,17,.82);
+
+    /* ✅ чтобы не раздувало */
+    max-height: 160px;
+    overflow: auto;
+    padding-right: 6px;
+}
+
+/* футер с кнопками */
+.ctm__foot{
+    padding: 12px 16px;
+    border-top: 1px solid rgba(0,0,0,.10);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    flex: 0 0 auto;
+    background: #fff;
+}
+
+.ctm-btn{
+    height: 42px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(0,0,0,.14);
+    background: rgba(0,0,0,.03);
+    color: #111;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.ctm-btn--primary{
+    border-color: rgba(111,55,255,.25);
+    background: rgba(111,55,255,.18);
+}
+
+.ctm-btn:disabled{
+    opacity: .6;
+    cursor: not-allowed;
+}
+
+@media (max-width: 900px){
+    .ctm-overlay{ padding: 12px; place-items: start center; }
+    .ctm{ max-height: calc(100vh - 24px); }
+    .ctm__grid{ grid-template-columns: 1fr; }
+}

@@ -1,0 +1,85 @@
+.msg-list{
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: 14px;
+    background: rgba(0,0,0,.02);
+}
+
+.msg-empty{
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.msg{
+    display: flex;
+    margin-bottom: 10px;
+}
+
+.msg--mine{ justify-content: flex-end; }
+.msg--their{ justify-content: flex-start; }
+
+.msg__bubble{
+    max-width: 72%;
+    border-radius: 16px;
+    padding: 10px 12px;
+    border: 1px solid rgba(0,0,0,.10);
+    background: #fff;
+}
+
+.msg--mine .msg__bubble{
+    border-color: rgba(111,55,255,.20);
+    background: rgba(111,55,255,.08);
+}
+
+.msg__text{
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.35;
+    font-size: 13px;
+}
+
+.msg__time{
+    margin-top: 6px;
+    font-size: 11px;
+    color: rgba(17,17,17,.55);
+}
+
+/* composer */
+.composer{
+    display: grid;
+    grid-template-columns: 1fr 140px;
+    gap: 10px;
+    padding: 12px;
+    border-top: 1px solid var(--border);
+    background: #fff;
+}
+
+.composer__input{
+    width: 100%;
+    resize: none;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    padding: 10px 12px;
+    outline: none;
+    background: #fff;
+}
+
+.composer__input:focus{
+    border-color: rgba(111,55,255,.55);
+    box-shadow: 0 0 0 3px rgba(111,55,255,.14);
+}
+
+.composer__btn{
+    border-radius: 14px;
+    border: 1px solid rgba(111,55,255,.25);
+    background: rgba(111,55,255,.18);
+    color: #111;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.composer__btn:disabled{
+    opacity: .6;
+    cursor: default;
+}

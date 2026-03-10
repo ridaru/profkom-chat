@@ -1,0 +1,20 @@
+:root{
+    --page-bg: #f3f3f5;          /* как на сайте */
+    --text: #111;
+    --muted: rgba(17,17,17,.62);
+    --border: rgba(0,0,0,.10);
+    --card: #fff;
+    --prof-purple: #6f37ff;
+
+    --ph-h: 72px;
+    --ph-max: 1440px;
+}
+
+.shell{
+    min-height: 100vh;
+    background: var(--page-bg);
+}
+
+.shell__main{
+    min-height: calc(100vh - var(--ph-h));
+}

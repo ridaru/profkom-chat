@@ -1,0 +1,99 @@
+.home{
+    min-height: calc(100vh - var(--ph-h));
+}
+
+.home__hero{
+    position: relative;
+    min-height: calc(92vh - var(--ph-h));
+    display: grid;
+    place-items: center;
+    padding: 40px 18px 54px;
+}
+
+.home__bg{
+    position: absolute;
+    inset: 0;
+    background:
+            radial-gradient(900px 500px at 20% 20%, rgba(111,55,255,.55), transparent 60%),
+            radial-gradient(800px 520px at 80% 30%, rgba(255,255,255,.16), transparent 55%),
+            radial-gradient(900px 700px at 50% 90%, rgba(0,0,0,.65), transparent 60%),
+            linear-gradient(180deg, #0b0b10, #141428);
+}
+
+.home__wrap{
+    position: relative;
+    z-index: 1;
+    max-width: 980px;
+    width: 100%;
+}
+
+.home__title{
+    color: white;
+    font-weight: 900;
+    font-size: clamp(40px, 6vw, 84px);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+}
+
+.home__subtitle{
+    margin-top: 10px;
+    color: rgba(255,255,255,.72);
+    font-size: clamp(16px, 2.1vw, 28px);
+    font-style: italic;
+    font-weight: 300;
+}
+
+.home__lead{
+    margin-top: 18px;
+    max-width: 760px;
+    color: rgba(255,255,255,.78);
+    font-size: 18px;
+    line-height: 1.5;
+}
+
+.home__cta{
+    display: flex;
+    gap: 12px;
+    margin-top: 22px;
+    flex-wrap: wrap;
+}
+
+.home__btn{
+    height: 46px;
+    padding: 0 16px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,.18);
+    background: rgba(255,255,255,.08);
+    color: white;
+    display: inline-flex;
+    align-items: center;
+    font-weight: 800;
+    text-decoration: none;
+    transition: transform .18s ease, opacity .18s ease, background .18s ease;
+}
+
+.home__btn:hover{ transform: translateY(-1px); opacity: .9; }
+
+.home__btn--primary{
+    background: rgba(111,55,255,.28);
+    border-color: rgba(111,55,255,.35);
+}
+
+.home__section{
+    padding: 46px 18px 70px;
+    background: #0f0f14;
+    border-top: 1px solid rgba(255,255,255,.08);
+}
+
+.home__h2{
+    color: white;
+    font-size: 26px;
+    margin: 0 0 12px;
+}
+
+.home__text{
+    color: rgba(255,255,255,.72);
+    max-width: 920px;
+    line-height: 1.6;
+    margin: 0;
+}

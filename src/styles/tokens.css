@@ -1,0 +1,28 @@
+:root {
+    /* STANKIN identity (screen colors) */
+    --brand-blue: #052891;
+    --brand-red: #FA235A;
+    --brand-sky: #6491F0;
+    --brand-green: #46C8A0;
+    --brand-purple: #820AAA;
+    --brand-pink: #E16AFF;
+
+    /* neutrals */
+    --bg: #f6f8ff;
+    --card: #ffffff;
+    --text: #0b1020;
+    --muted: rgba(11, 16, 32, 0.64);
+    --border: rgba(5, 40, 145, 0.12);
+
+    /* radius/shadows */
+    --r-lg: 18px;
+    --r-md: 14px;
+    --r-sm: 12px;
+
+    --shadow-sm: 0 6px 16px rgba(5, 40, 145, 0.08);
+    --shadow-md: 0 14px 34px rgba(5, 40, 145, 0.12);
+
+    /* typography */
+    /* В брендбуке: ALS Sirius Bold/Medium/Regular. Если потом добавишь файлы шрифта — подключим. */
+    --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
+}
