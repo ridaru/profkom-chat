@@ -41,7 +41,7 @@
 }
 
 .ph__link:hover{ opacity: .7; }
-.ph__link.is-active{ border-bottom: 2px solid var(--prof-purple) }
+.ph__link.is-active{ border-bottom: 2px solid var(--prof-purple); background-color: #fff; border-radius: 999px;}
 
 
 
@@ -95,20 +95,21 @@
     align-items: center;
     gap: 10px;
     min-height: 48px;
-    padding: 6px 10px 6px 8px;
+    padding: 6px 8px 6px 10px;
     border: 1px solid rgba(255, 255, 255, 0.14);
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 16px;
+    background: #fff;
+    border-radius: 999px;
     color: black;
     cursor: pointer;
     transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
     backdrop-filter: blur(10px);
+    
 }
 
 .ph__userBtn:hover,
 .ph__userBtn.is-open {
-    background: rgba(255, 255, 255, 0.14);
-    border-color: rgba(255, 255, 255, 0.22);
+    background: #fff;
+    border-radius: 999px;
 }
 
 .ph__avatar {

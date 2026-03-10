@@ -65,6 +65,11 @@
     background: #fff;
     max-height: 40px;
     overflow: hidden;
+    font-size: 13px;
+}
+
+.composer__input::placeholder{
+    font-size: 13px;
 }
 
 .composer__input:focus{
@@ -87,6 +92,7 @@
     opacity: 1;
     transition: opacity .15s 
 ease;
+    border-bottom: 2px solid #000;
 }
 
 .composer__btn:disabled{

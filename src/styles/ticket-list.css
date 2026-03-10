@@ -33,6 +33,7 @@
 .ticket-row--active{
     border-color: rgba(62, 11, 143, 0.35);
     box-shadow: 0 14px 30px rgba(118, 9, 207, 0.1);
+    border-left: 2px solid var(--prof-purple);
 }
 
 .ticket-row__top{
@@ -42,7 +43,7 @@
 }
 
 .ticket-row__topic{
-    font-weight: 900;
+    font-weight: 600;
     font-size: 14px;
     line-height: 1.25;
 }
@@ -60,7 +61,7 @@
     background: rgba(111,55,255,.18);
     border: 1px solid rgba(111,55,255,.25);
     color: #111;
-    font-weight: 900;
+    font-weight: 500;
 }
 
 .badge--new{ background: rgba(111,55,255,.10); border-color: rgba(111,55,255,.18); }
