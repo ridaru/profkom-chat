@@ -37,7 +37,7 @@
 }
 
 .ctm__title{
-    font-weight: 900;
+    font-weight: 600;
     font-size: 18px;
     color: #111;
 }
@@ -55,7 +55,7 @@
     border: 1px solid rgba(0,0,0,.10);
     background: rgba(0,0,0,.03);
     cursor: pointer;
-    font-weight: 900;
+    font-weight: 600;
 }
 
 .ctm__form{
@@ -82,7 +82,7 @@
     display: grid;
     gap: 6px;
     font-size: 12px;
-    font-weight: 800;
+    font-weight: 500;
     color: rgba(17,17,17,.80);
 }
 
@@ -118,7 +118,7 @@
 .ctm__section{
     grid-column: 1 / -1;
     margin-top: 6px;
-    font-weight: 900;
+    font-weight: 600;
     color: rgba(17,17,17,.86);
 }
 
@@ -158,7 +158,7 @@
 }
 
 .ctm__infoTitle{
-    font-weight: 900;
+    font-weight: 600;
     margin-bottom: 6px;
 }
 
@@ -190,7 +190,7 @@
 }
 
 .ctm__previewTitle{
-    font-weight: 900;
+    font-weight: 600;
     margin-bottom: 8px;
 }
 
@@ -223,16 +223,18 @@
     height: 42px;
     padding: 0 14px;
     border-radius: 999px;
-    border: 1px solid rgba(0,0,0,.14);
-    background: rgba(0,0,0,.03);
-    color: #111;
-    font-weight: 900;
+    border: none;
+    background: var(--input);
+    color: black;
+    font-weight: 500;
     cursor: pointer;
+    font-size: 14px;
 }
 
 .ctm-btn--primary{
-    border-color: rgba(111,55,255,.25);
-    background: rgba(111,55,255,.18);
+    border: none;
+    background: var(--prof-purple);
+    color: #fff;
 }
 
 .ctm-btn:disabled{

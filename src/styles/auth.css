@@ -15,7 +15,7 @@
 }
 
 .auth__head{ margin-bottom: 12px; }
-.auth__title{ font-weight: 900; font-size: 20px; }
+.auth__title{ font-weight: 600; font-size: 20px; }
 .auth__subtitle{ margin-top: 4px; color: var(--muted); font-size: 13px; }
 
 .auth__form{ display: grid; gap: 10px; margin-top: 12px; }
@@ -44,13 +44,19 @@
 
 .auth__btn{
     height: 46px;
-    border-radius: 14px;
-    border: 1px solid rgba(111,55,255,.25);
-    background: rgba(111,55,255,.18);
-    color: #111;
-    font-weight: 900;
+    border-radius: 999px;
+    border: none;
+    background: var(--prof-purple);
+    color: #ffffff;
     cursor: pointer;
-    transition: transform .18s ease, opacity .18s ease;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 1;
+    transition: opacity .15s 
+ease;
 }
 
 .auth__btn:hover{ transform: translateY(-1px); opacity: .92; }
@@ -73,5 +79,5 @@
 
 .auth__foot a{
     color: #111;
-    font-weight: 900;
+    font-weight: 600;
 }

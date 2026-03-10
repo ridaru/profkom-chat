@@ -7,13 +7,24 @@ export type UserRole = "student" | "operator" | "admin";
 export interface User {
     id: string;
     fullName: string;
-    email: string;        // уникально (мы сами проверяем)
+    email: string;
     role: UserRole;
 
-    passSaltB64: string;  // для PBKDF2
+    passSaltB64: string;
     passHashB64: string;
 
     createdAt: string;
+
+    // профиль
+    studentCard?: string;
+    studyForm?: "Очная" | "Очно-заочная" | "Заочная";
+    group?: string;
+
+    // ЭЦП (демо-модель)
+    edsEnabled?: boolean;
+    edsCertificateName?: string;
+    edsCertificateSerial?: string;
+    edsConnectedAt?: string;
 }
 
 export type TicketStatus = "new" | "in_progress" | "need_info" | "closed";
@@ -84,9 +95,9 @@ export async function seedDatabase() {
         };
     };
 
-    const operator = await mkUser("Оператор 1", "operator@prof-stankin.ru", "operator", "123456");
-    const admin = await mkUser("Админ", "admin@prof-stankin.ru", "admin", "123456");
-    const student = await mkUser("Иван Иванов", "student@local", "student", "123456");
+    const operator = await mkUser("Оператор 1", "operator@stankin.ru", "operator", "123456");
+    const admin = await mkUser("Админ", "admin@stankin.ru", "admin", "123456");
+    const student = await mkUser("Иван Иванов", "student@stankin.ru", "student", "123456");
 
     await db.users.bulkAdd([operator, admin, student]);
 }

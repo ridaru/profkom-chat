@@ -1,15 +1,10 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../features/auth/store";
 import "../styles/prof-header.css";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const Logo = () => (
-    <svg viewBox="0 0 45 45" xmlns="http://www.w3.org/2000/svg" className="ph__logo">
-        <path
-            fillRule="evenodd"
-            clipRule="evenodd"
-            d="M22.8372 1.68963L11.8027 4.64632L11.6634 4.68362C8.99104 5.39963 6.78733 5.99006 5.10606 6.69188C3.3409 7.42868 1.86756 8.39877 0.919661 10.0406C-0.0282389 11.6824 -0.13166 13.4434 0.112798 15.3404C0.345644 17.1474 0.936177 19.351 1.65232 22.0234L1.68964 22.1627L4.64631 33.1972L4.68362 33.3365C5.39962 36.0089 5.99005 38.2126 6.69187 39.8938C7.42872 41.6591 8.39877 43.1322 10.0406 44.0802C11.6824 45.0282 13.4434 45.1316 15.3404 44.8873C17.1474 44.6543 19.3511 44.0639 22.0234 43.3475L22.1627 43.3104L33.1972 40.3536L33.3365 40.3163C36.0089 39.6003 38.2126 39.0098 39.8939 38.308C41.6591 37.5712 43.1322 36.6011 44.0802 34.9593C45.0282 33.3175 45.1316 31.5565 44.8873 29.6595C44.6543 27.8525 44.0639 25.6489 43.3475 22.9765L43.3103 22.8372L40.3536 11.8027L40.3163 11.6634C39.6003 8.991 39.0099 6.78733 38.3081 5.10603C37.5713 3.3409 36.6012 1.86756 34.9594 0.91966C33.3176 -0.0282385 31.5566 -0.13166 29.6595 0.112799C27.8525 0.345644 25.6489 0.936177 22.9765 1.65231L22.8372 1.68963ZM3.66317 21.6339C2.16748 16.0519 1.41963 13.2609 2.68909 11.0621C3.95854 8.86338 6.74953 8.11555 12.3316 6.61984L23.366 3.66317C28.948 2.16747 31.739 1.41963 33.9378 2.68908C36.1365 3.95855 36.8844 6.74954 38.3801 12.3315L41.3367 23.366C42.8327 28.948 43.5805 31.739 42.3108 33.9378C41.0412 36.1365 38.2504 36.8844 32.6684 38.3801L21.6339 41.3367C16.0519 42.8323 13.2609 43.5805 11.0621 42.3108C8.86338 41.0412 8.11554 38.2504 6.61987 32.6684L3.66317 21.6339Z"
-        />
-    </svg>
+<svg viewBox="0 0 45 45" xmlns="http://www.w3.org/2000/svg" className="ph__logo"><path fill-rule="evenodd" clip-rule="evenodd" d="M22.8372 1.68963L11.8027 4.64632L11.6634 4.68362C8.99104 5.39963 6.78733 5.99006 5.10606 6.69188C3.3409 7.42868 1.86756 8.39877 0.919661 10.0406C-0.0282389 11.6824 -0.13166 13.4434 0.112798 15.3404C0.345644 17.1474 0.936177 19.351 1.65232 22.0234L1.68964 22.1627L4.64631 33.1972L4.68362 33.3365C5.39962 36.0089 5.99005 38.2126 6.69187 39.8938C7.42872 41.6591 8.39877 43.1322 10.0406 44.0802C11.6824 45.0282 13.4434 45.1316 15.3404 44.8873C17.1474 44.6543 19.3511 44.0639 22.0234 43.3475L22.1627 43.3104L33.1972 40.3536L33.3365 40.3163C36.0089 39.6003 38.2126 39.0098 39.8939 38.308C41.6591 37.5712 43.1322 36.6011 44.0802 34.9593C45.0282 33.3175 45.1316 31.5565 44.8873 29.6595C44.6543 27.8525 44.0639 25.6489 43.3475 22.9765L43.3103 22.8372L40.3536 11.8027L40.3163 11.6634C39.6003 8.991 39.0099 6.78733 38.3081 5.10603C37.5713 3.3409 36.6012 1.86756 34.9594 0.91966C33.3176 -0.0282385 31.5566 -0.13166 29.6595 0.112799C27.8525 0.345644 25.6489 0.936177 22.9765 1.65231L22.8372 1.68963ZM3.66317 21.6339C2.16748 16.0519 1.41963 13.2609 2.68909 11.0621C3.95854 8.86338 6.74953 8.11555 12.3316 6.61984L23.366 3.66317C28.948 2.16747 31.739 1.41963 33.9378 2.68908C36.1365 3.95855 36.8844 6.74954 38.3801 12.3315L41.3367 23.366C42.8327 28.948 43.5805 31.739 42.3108 33.9378C41.0412 36.1365 38.2504 36.8844 32.6684 38.3801L21.6339 41.3367C16.0519 42.8323 13.2609 43.5805 11.0621 42.3108C8.86338 41.0412 8.11554 38.2504 6.61987 32.6684L3.66317 21.6339ZM13.1064 10.2975H17.0554C19.8338 10.2975 21.9566 10.8282 21.9566 14.1528C21.9566 17.4931 19.8338 18.0238 17.0554 18.0238H15.6038V21.3016H13.1064V10.2975ZM15.6038 15.8386H17.2115C18.6943 15.8386 19.4592 15.6825 19.4592 14.1528C19.4592 12.6388 18.6943 12.4827 17.2115 12.4827H15.6038V15.8386ZM25.2416 21.3016H22.7442V10.2975H27.0054C29.6276 10.2975 31.9065 10.9062 31.9065 13.3724C31.9065 15.183 30.4393 15.6825 29.1125 15.8386V16.4629H30.7202C31.5787 16.4629 32.047 16.9312 32.047 17.7897V21.3016H29.5496V17.4306H25.2416V21.3016ZM25.2416 12.4827V15.2455H27.0054C28.4882 15.2455 29.4091 15.2455 29.4091 13.8719C29.4091 12.4827 28.4882 12.4827 27.0054 12.4827H25.2416ZM12.3406 28.9991C12.3406 32.2145 14.4634 34.665 17.9597 34.665C21.4405 34.665 23.5633 32.2145 23.5633 28.9991C23.5633 25.7993 21.4405 23.3488 17.9597 23.3488C14.4634 23.3488 12.3406 25.7993 12.3406 28.9991ZM14.838 28.9991C14.838 26.8919 15.8838 25.5339 17.9597 25.5339C20.0357 25.5339 21.0659 26.8919 21.0659 28.9991C21.0659 31.1219 20.0357 32.4798 17.9597 32.4798C15.8838 32.4798 14.838 31.1219 14.838 28.9991ZM27.0097 34.5089H24.5123V23.5048H32.3635V25.69H27.0097V28.8586L32.0045 28.5465V30.7629L27.0097 31.0751V34.5089Z"></path></svg>
 );
 
 const TgIcon = () => (
@@ -24,12 +19,61 @@ const VkIcon = () => (
     </svg>
 );
 
+function getInitials(fullName?: string | null) {
+    if (!fullName) return "П";
+    const parts = fullName.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 1) return parts[0].slice(0, 1).toUpperCase();
+    return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
+}
+
+function getRoleLabel(role?: string | null) {
+    if (role === "admin") return "Администратор";
+    if (role === "operator") return "Оператор";
+    return "Студент";
+}
+
 export default function ProfHeader() {
     const { pathname } = useLocation();
+    const navigate = useNavigate();
+
     const userId = useAuth((s) => s.userId);
+    const logout = useAuth((s) => s.logout);
+
+    // подставь реальные поля из своего store
+    const fullName = useAuth((s: any) => s.fullName || s.name || s.fio || "Пользователь");
+    const role = useAuth((s: any) => s.role || "student");
+    const avatarUrl = useAuth((s: any) => s.avatarUrl || "");
+
+    const [menuOpen, setMenuOpen] = useState(false);
+    const menuRef = useRef<HTMLDivElement | null>(null);
 
     const isHome = pathname === "/";
     const messengerHref = userId ? "/app" : "/login";
+
+    const initials = useMemo(() => getInitials(fullName), [fullName]);
+
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (!menuRef.current) return;
+            if (!menuRef.current.contains(e.target as Node)) {
+                setMenuOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const handleLogout = () => {
+        setMenuOpen(false);
+        logout();
+        navigate("/");
+    };
+
+    const handleProfile = () => {
+        setMenuOpen(false);
+        navigate("/app/profile");
+    };
 
     return (
         <header className={`ph ${isHome ? "ph--blend" : "ph"}`}>
@@ -80,6 +124,52 @@ export default function ProfHeader() {
                             <VkIcon />
                         </a>
                     </div>
+
+                    {userId && (
+                        <div className="ph__user" ref={menuRef}>
+                            <button
+                                type="button"
+                                className={`ph__userBtn ${menuOpen ? "is-open" : ""}`}
+                                onClick={() => setMenuOpen((prev) => !prev)}
+                            >
+                                <span className="ph__avatar">
+                                    {avatarUrl ? (
+                                        <img src={avatarUrl} alt={fullName} className="ph__avatarImg" />
+                                    ) : (
+                                        initials
+                                    )}
+                                </span>
+
+                                <span className="ph__userMeta">
+                                    <span className="ph__userName">{fullName}</span>
+                                    <span className="ph__userRole">{getRoleLabel(role)}</span>
+                                </span>
+
+                                <span className={`ph__userArrow ${menuOpen ? "is-open" : ""}`}>
+                                    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                                        <path
+                                            d="M5 7.5L10 12.5L15 7.5"
+                                            stroke="currentColor"
+                                            strokeWidth="1.8"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        />
+                                    </svg>
+                                </span>
+                            </button>
+
+                            {menuOpen && (
+                                <div className="ph__userMenu">
+                                    <button type="button" className="ph__userMenuItem" onClick={handleProfile}>
+                                        Личный кабинет
+                                    </button>
+                                    <button type="button" className="ph__userMenuItem ph__userMenuItem--danger" onClick={handleLogout}>
+                                        Выйти
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </nav>
             </div>
         </header>

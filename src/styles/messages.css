@@ -23,13 +23,13 @@
     max-width: 72%;
     border-radius: 16px;
     padding: 10px 12px;
-    border: 1px solid rgba(0,0,0,.10);
+    border: none;
     background: #fff;
 }
 
 .msg--mine .msg__bubble{
-    border-color: rgba(111,55,255,.20);
-    background: rgba(111,55,255,.08);
+    border-color: rgba(142, 6, 253, 0.2);
+    background: rgba(118, 38, 247, 0.2);
 }
 
 .msg__text{
@@ -58,11 +58,13 @@
 .composer__input{
     width: 100%;
     resize: none;
-    border-radius: 14px;
+    border-radius: 999px;
     border: 1px solid var(--border);
-    padding: 10px 12px;
+    padding: 10px;
     outline: none;
     background: #fff;
+    max-height: 40px;
+    overflow: hidden;
 }
 
 .composer__input:focus{
@@ -71,12 +73,20 @@
 }
 
 .composer__btn{
-    border-radius: 14px;
-    border: 1px solid rgba(111,55,255,.25);
-    background: rgba(111,55,255,.18);
-    color: #111;
-    font-weight: 900;
+    height: 40px;
+    border-radius: 999px;
+    border: none;
+    background: var(--prof-purple);
+    color: #ffffff;
     cursor: pointer;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 1;
+    transition: opacity .15s 
+ease;
 }
 
 .composer__btn:disabled{

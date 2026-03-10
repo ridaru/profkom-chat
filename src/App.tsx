@@ -6,20 +6,17 @@ import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/Login";
 import RegisterPage from "./pages/Register";
 import StudentPage from "./pages/Student";
+import ProfilePage from "./pages/ProfilePage";
 
 export default function App() {
     return (
         <BrowserRouter basename={import.meta.env.BASE_URL}>
             <Routes>
-                {/* Вся “оболочка сайта” (шапка и фон) */}
                 <Route element={<SiteShell />}>
                     <Route path="/" element={<HomePage />} />
-
-                    {/* Авторизация/регистрация */}
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
 
-                    {/* Мессенджер */}
                     <Route
                         path="/app"
                         element={
@@ -29,7 +26,15 @@ export default function App() {
                         }
                     />
 
-                    {/* fallback */}
+                    <Route
+                        path="/app/profile"
+                        element={
+                            <ProtectedRoute>
+                                <ProfilePage />
+                            </ProtectedRoute>
+                        }
+                    />
+
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Route>
             </Routes>
