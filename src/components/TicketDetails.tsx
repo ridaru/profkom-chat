@@ -13,6 +13,15 @@ type Props = {
     onChanged?: () => void;
 };
 
+type DocumentAttachment = {
+    id: string;
+    name: string;
+    size: number;
+    type: string;
+    lastModified: number;
+    dataUrl: string;
+};
+
 const statusRu: Record<Ticket["status"], string> = {
     new: "Новое",
     in_progress: "В работе",
@@ -32,6 +41,7 @@ type MaterialSupport = {
         docsCommon?: string[];
         docsForCategory?: string;
     };
+    attachments?: DocumentAttachment[];
 };
 
 type SocialSupport = {
@@ -46,6 +56,7 @@ type SocialSupport = {
         docsCommon?: string[];
         docsForCategory?: string;
     };
+    attachments?: DocumentAttachment[];
 };
 
 type Signature = {
@@ -104,6 +115,132 @@ function InfoList({ title, items }: { title: string; items?: string[] }) {
             </ul>
         </div>
     );
+}
+
+function formatFileSize(size: number) {
+    if (size < 1024) return `${size} Б`;
+    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} КБ`;
+    return `${(size / (1024 * 1024)).toFixed(1)} МБ`;
+}
+
+function AttachmentList({ items }: { items?: DocumentAttachment[] }) {
+    if (!items || items.length === 0) return null;
+
+    return (
+        <div className="td-info__block">
+            <div className="td-info__blockTitle">Файлы документов</div>
+            <ul className="td-files">
+                {items.map((file) => (
+                    <li className="td-files__item" key={file.id}>
+                        <div className="td-files__meta">
+                            <span className="td-files__name">{file.name}</span>
+                            <span className="td-files__size">{formatFileSize(file.size)}</span>
+                        </div>
+                        <a className="td-files__link" href={file.dataUrl} download={file.name}>
+                            Скачать
+                        </a>
+                    </li>
+                ))}
+            </ul>
+        </div>
+    );
+}
+
+function escapeDocHtml(value: string) {
+    return value
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+}
+
+function statementToDocHtml(statementText: string) {
+    const lines = statementText.split(/\r?\n/);
+    const titleIndex = lines.findIndex((line) => line.trim().toUpperCase() === "ЗАЯВЛЕНИЕ");
+
+    return lines
+        .map((line, lineIndex) => {
+            const trimmed = line.trim();
+
+            if (!trimmed) {
+                return '<p class="MsoNormal" style="margin:0; font-family:&quot;Times New Roman&quot;, serif; font-size:12.0pt; line-height:150%; mso-line-height-rule:exactly;">&nbsp;</p>';
+            }
+
+            const isSignLine = /^(Дата|Подпись):/i.test(trimmed);
+            const isTitle = trimmed === trimmed.toUpperCase() && trimmed.length > 3;
+            const isRecipientBlock = titleIndex > -1 && lineIndex < titleIndex;
+            const align = isSignLine || isRecipientBlock ? "right" : isTitle ? "center" : "left";
+            const fontWeight = isTitle ? "bold" : "normal";
+            const titleMargin = isTitle ? "margin-top:6.0pt; margin-bottom:6.0pt;" : "margin-top:0; margin-bottom:0;";
+
+            return `<p class="MsoNormal" align="${align}" style="${titleMargin} text-align:${align}; font-family:&quot;Times New Roman&quot;, serif; font-size:12.0pt; line-height:150%; mso-line-height-rule:exactly; font-weight:${fontWeight};">${escapeDocHtml(trimmed)}</p>`;
+        })
+        .join("");
+}
+
+function downloadStatementDoc(statementText: string, title?: string) {
+    const normalizedTitle = (title ?? "statement")
+        .trim()
+        .replace(/[\\/:*?"<>|]+/g, "-")
+        .replace(/\s+/g, "_");
+    const fileName = `${normalizedTitle || "statement"}.doc`;
+    const html = `<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+    <meta charset="utf-8">
+    <title>${escapeDocHtml(title ?? "Заявление")}</title>
+    <!--[if gte mso 9]>
+    <xml>
+        <w:WordDocument>
+            <w:View>Print</w:View>
+            <w:Zoom>100</w:Zoom>
+            <w:DoNotOptimizeForBrowser/>
+        </w:WordDocument>
+    </xml>
+    <![endif]-->
+    <style>
+        @page {
+            size: A4;
+            margin: 20mm 10mm 20mm 30mm;
+            mso-header-margin: 0mm;
+            mso-footer-margin: 0mm;
+        }
+        body {
+            margin: 0;
+            font-family: "Times New Roman", serif;
+            font-size: 12pt;
+            line-height: 150%;
+            color: #000;
+        }
+        p.MsoNormal {
+            mso-style-parent: "";
+            margin: 0;
+            font-size: 12.0pt;
+            font-family: "Times New Roman", serif;
+            line-height: 150%;
+            mso-line-height-rule: exactly;
+        }
+    </style>
+</head>
+<body>
+    <div class="Section1" style="page: Section1;">
+        ${statementToDocHtml(statementText)}
+    </div>
+</body>
+</html>`;
+
+    const blob = new Blob(["\ufeff", html], { type: "application/msword;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
 }
 
 const TicketDetails = ({ ticketId, currentUserId, role, onChanged }: Props) => {
@@ -183,7 +320,14 @@ const TicketDetails = ({ ticketId, currentUserId, role, onChanged }: Props) => {
             <div className="td-body">
                 {/* Левая колонка — данные обращения */}
                 <section className="td-card td-info">
-                    <div className="td-card__title">Данные обращения</div>
+                    <div className="td-card__title td-info__titleRow">
+                        <span>Данные обращения</span>
+                        {sign?.statementPreview && (
+                            <button type="button" className="td-info__download" onClick={() => downloadStatementDoc(sign.statementPreview, form.title)}>
+                                Скачать Word
+                            </button>
+                        )}
+                    </div>
 
                     {form.title && <InfoRow label="Заголовок" value={form.title} />}
                     {form.description && <InfoRow label="Описание" value={form.description} />}
@@ -210,6 +354,8 @@ const TicketDetails = ({ ticketId, currentUserId, role, onChanged }: Props) => {
                                     <div className="td-info__text">{ms.hints.docsForCategory}</div>
                                 </div>
                             )}
+
+                            <AttachmentList items={ms.attachments} />
                         </>
                     )}
 
@@ -236,6 +382,8 @@ const TicketDetails = ({ ticketId, currentUserId, role, onChanged }: Props) => {
                                     <div className="td-info__text">{ss.hints.docsForCategory}</div>
                                 </div>
                             )}
+
+                            <AttachmentList items={ss.attachments} />
                         </>
                     )}
 

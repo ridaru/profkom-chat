@@ -1,29 +1,46 @@
 .student-page{
-    /* было: max-width var(--ph-max) и маленькие отступы */
-    width: min(1680px, calc(100% - 48px)); /* шире */
+    width: min(1680px, calc(100% - 48px));
     margin: 0 auto;
     padding: 18px 0 42px;
 
     display: grid;
-    grid-template-columns: 420px 1fr; /* левую колонку немного шире */
+    grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
     gap: 18px;
+    align-items: start;
+}
+
+.student-page__left,
+.student-page__right{
+    min-width: 0;
 }
 
 .student-page__leftHeader{
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
+    gap: 12px;
     margin-bottom: 12px;
 }
 
 .student-page__right {
-    padding: 10px;
+    min-height: calc(100vh - var(--ph-h) - 78px);
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    border-radius: 18px;
+}
+
+.student-page__right > .td{
+    width: 100%;
+    min-width: 0;
+    box-shadow: 0 14px 40px rgba(0,0,0,.06);
 }
 
 .student-page__h1{
     margin: 0;
     font-size: 18px;
     font-weight: 500;
+    overflow-wrap: anywhere;
 }
 
 .student-page__sub{
@@ -69,7 +86,54 @@
 
 }
 
+.student-page__empty{
+    min-height: 420px;
+    display: grid;
+    place-items: center;
+    border: 1px dashed rgba(0,0,0,.12);
+    border-radius: 18px;
+    background: rgba(255,255,255,.70);
+    padding: 24px;
+}
+
+.student-page__emptyCard{
+    width: min(420px, 100%);
+    text-align: center;
+}
+
+.student-page__emptyCard p{
+    margin: 10px 0 0;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.45;
+}
+
 /* адаптив */
 @media (max-width: 980px){
-    .student-page{ grid-template-columns: 1fr; width: min(100%, calc(100% - 24px)); }
+    .student-page{
+        grid-template-columns: minmax(0, 1fr);
+        width: min(100%, calc(100% - 24px));
+        gap: 14px;
+    }
+
+    .student-page__right{
+        min-height: auto;
+    }
+}
+
+@media (max-width: 620px){
+    .student-page{
+        width: min(100%, calc(100% - 16px));
+        padding-top: 10px;
+    }
+
+    .student-page__leftHeader{
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .sp-new{
+        width: 100%;
+        justify-content: center;
+    }
 }

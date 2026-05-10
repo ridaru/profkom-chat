@@ -2,40 +2,49 @@
     flex: 1;
     min-height: 0;
     overflow: auto;
-    padding: 14px;
-    background: rgba(0,0,0,.02);
+    padding: 18px;
+    background:
+        radial-gradient(circle at top left, rgba(111,55,255,.10), transparent 280px),
+        linear-gradient(180deg, rgba(111,55,255,.035), rgba(0,0,0,.018));
+    scrollbar-width: thin;
+    scrollbar-color: rgba(111,55,255,.62) rgba(111,55,255,.08);
 }
 
 .msg-empty{
     color: var(--muted);
     font-size: 13px;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,.08);
+    border-radius: 12px;
+    padding: 12px;
 }
 
 .msg{
     display: flex;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
 }
 
 .msg--mine{ justify-content: flex-end; }
 .msg--their{ justify-content: flex-start; }
 
 .msg__bubble{
-    max-width: 72%;
-    border-radius: 16px;
-    padding: 10px 12px;
-    border: none;
+    max-width: min(72%, 680px);
+    border-radius: 14px;
+    padding: 11px 13px;
+    border: 1px solid rgba(0,0,0,.08);
     background: #fff;
+    box-shadow: 0 8px 20px rgba(0,0,0,.045);
 }
 
 .msg--mine .msg__bubble{
-    border-color: rgba(142, 6, 253, 0.2);
-    background: rgba(118, 38, 247, 0.2);
+    border-color: rgba(111,55,255,.22);
+    background: linear-gradient(180deg, rgba(111,55,255,.16), rgba(111,55,255,.10));
 }
 
 .msg__text{
     white-space: pre-wrap;
     word-break: break-word;
-    line-height: 1.35;
+    line-height: 1.45;
     font-size: 13px;
 }
 
@@ -48,24 +57,28 @@
 /* composer */
 .composer{
     display: grid;
-    grid-template-columns: 1fr 140px;
+    grid-template-columns: minmax(0, 1fr) 46px;
+    align-items: center;
     gap: 10px;
-    padding: 12px;
+    padding: 14px;
     border-top: 1px solid var(--border);
-    background: #fff;
+    background: rgba(255,255,255,.94);
 }
 
 .composer__input{
     width: 100%;
     resize: none;
-    border-radius: 999px;
-    border: 1px solid var(--border);
-    padding: 10px;
+    border-radius: 14px;
+    border: 1px solid rgba(111,55,255,.16);
+    padding: 10px 12px;
     outline: none;
     background: #fff;
-    max-height: 40px;
-    overflow: hidden;
+    min-height: 42px;
+    max-height: 140px;
+    overflow-y: hidden;
     font-size: 13px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(111,55,255,.62) rgba(111,55,255,.08);
 }
 
 .composer__input::placeholder{
@@ -78,8 +91,9 @@
 }
 
 .composer__btn{
-    height: 40px;
-    border-radius: 999px;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
     border: none;
     background: var(--prof-purple);
     color: #ffffff;
@@ -90,12 +104,43 @@
     font-size: 14px;
     font-weight: 500;
     opacity: 1;
-    transition: opacity .15s 
-ease;
-    border-bottom: 2px solid #000;
+    align-self: center;
+    transition: opacity .15s ease, transform .15s ease;
+}
+
+.composer__sendIcon{
+    width: 21px;
+    height: 21px;
+    display: block;
+    transform: rotate(-38deg) translate(1px, -1px);
+}
+
+.composer__btn:hover{
+    opacity: .9;
+    transform: translateY(-1px);
 }
 
 .composer__btn:disabled{
     opacity: .6;
     cursor: default;
+    transform: none;
+}
+
+@media (max-width: 620px){
+    .msg-list{
+        padding: 14px;
+    }
+
+    .msg__bubble{
+        max-width: 88%;
+    }
+
+    .composer{
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .composer__btn{
+        width: 46px;
+        justify-self: end;
+    }
 }

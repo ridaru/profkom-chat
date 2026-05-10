@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -231,6 +232,15 @@ type Props = {
     onCreated: (ticketId: string) => void;
 };
 
+type DocumentAttachment = {
+    id: string;
+    name: string;
+    size: number;
+    type: string;
+    lastModified: number;
+    dataUrl: string;
+};
+
 type TicketFormData = {
     title: string;
     description: string;
@@ -247,6 +257,7 @@ type TicketFormData = {
             docsCommon: string[];
             docsForCategory: string;
         };
+        attachments: DocumentAttachment[];
     };
 
     socialSupport?: {
@@ -261,6 +272,7 @@ type TicketFormData = {
             docsCommon: string[];
             docsForCategory: string;
         };
+        attachments: DocumentAttachment[];
     };
 
     signature?: {
@@ -275,6 +287,11 @@ type TicketFormData = {
 const CreateTicketModal = ({ open, onClose, currentUserId, onCreated }: Props) => {
     const [me, setMe] = useState<User | null>(null);
     const [busy, setBusy] = useState(false);
+    const [documentFiles, setDocumentFiles] = useState<File[]>([]);
+    const [topicSelectOpen, setTopicSelectOpen] = useState(false);
+    const [topicSearch, setTopicSearch] = useState("");
+    const topicSelectRef = useRef<HTMLDivElement | null>(null);
+    const [topicMenuRect, setTopicMenuRect] = useState<DOMRect | null>(null);
 
     const {
         register,
@@ -311,6 +328,7 @@ const CreateTicketModal = ({ open, onClose, currentUserId, onCreated }: Props) =
 
     const values = useWatch({ control });
     const topic = values?.topic;
+    const filteredTopics = TOPICS.filter((item) => item.toLowerCase().includes(topicSearch.trim().toLowerCase()));
 
     useEffect(() => {
         if (!open) return;
@@ -329,6 +347,7 @@ const CreateTicketModal = ({ open, onClose, currentUserId, onCreated }: Props) =
     useEffect(() => {
         if (!open) return;
 
+        setDocumentFiles([]);
         reset({
             topic: "Материальная поддержка",
             title: "",
@@ -353,6 +372,125 @@ const CreateTicketModal = ({ open, onClose, currentUserId, onCreated }: Props) =
         });
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open]);
+
+    useEffect(() => {
+        if (!open) {
+            setTopicSelectOpen(false);
+            setTopicSearch("");
+        }
+    }, [open]);
+
+    useEffect(() => {
+        if (!topicSelectOpen) return;
+
+        const updateMenuRect = () => {
+            setTopicMenuRect(topicSelectRef.current?.getBoundingClientRect() ?? null);
+        };
+
+        updateMenuRect();
+        window.addEventListener("resize", updateMenuRect);
+        window.addEventListener("scroll", updateMenuRect, true);
+
+        return () => {
+            window.removeEventListener("resize", updateMenuRect);
+            window.removeEventListener("scroll", updateMenuRect, true);
+        };
+    }, [topicSelectOpen]);
+
+    const formatFileSize = (size: number) => {
+        if (size < 1024) return `${size} Б`;
+        if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} КБ`;
+        return `${(size / (1024 * 1024)).toFixed(1)} МБ`;
+    };
+
+    const addDocumentFiles = (files: File[]) => {
+        if (files.length === 0) return;
+
+        setDocumentFiles((current) => {
+            const known = new Set(current.map((file) => `${file.name}-${file.size}-${file.lastModified}`));
+            const next = [...current];
+
+            files.forEach((file) => {
+                const key = `${file.name}-${file.size}-${file.lastModified}`;
+                if (!known.has(key)) {
+                    known.add(key);
+                    next.push(file);
+                }
+            });
+
+            return next;
+        });
+    };
+
+    const removeDocumentFile = (fileToRemove: File) => {
+        setDocumentFiles((current) => current.filter((file) => file !== fileToRemove));
+    };
+
+    const readDocumentFile = (file: File): Promise<DocumentAttachment> =>
+        new Promise((resolve, reject) => {
+            const reader = new FileReader();
+
+            reader.onload = () => {
+                resolve({
+                    id: crypto.randomUUID(),
+                    name: file.name,
+                    size: file.size,
+                    type: file.type || "application/octet-stream",
+                    lastModified: file.lastModified,
+                    dataUrl: String(reader.result ?? ""),
+                });
+            };
+            reader.onerror = () => reject(reader.error);
+            reader.readAsDataURL(file);
+        });
+
+    const renderDocumentUpload = () => (
+        <div className="ctm-docs ctm__label--wide">
+            <div className="ctm-docs__top">
+                <div>
+                    <div className="ctm-docs__title">Файлы документов</div>
+                    <div className="ctm-docs__text">Загрузите сканы или фотографии подтверждающих документов.</div>
+                </div>
+
+                <label className="ctm-docs__button">
+                    Добавить файлы
+                    <input
+                        type="file"
+                        multiple
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp"
+                        onChange={(event) => {
+                            const selectedFiles = Array.from(event.target.files ?? []);
+                            addDocumentFiles(selectedFiles);
+                            event.target.value = "";
+                        }}
+                    />
+                </label>
+            </div>
+
+            <div className="ctm-docs__selected">
+                <div className="ctm-docs__selectedTitle">Выбранные документы:</div>
+
+                {documentFiles.length === 0 ? (
+                    <div className="ctm-docs__empty">Файлы пока не выбраны.</div>
+                ) : (
+                    <ul className="ctm-docs__list">
+                        {documentFiles.map((file) => (
+                            <li className="ctm-docs__item" key={`${file.name}-${file.size}-${file.lastModified}`}>
+                                <span className="ctm-docs__icon" aria-hidden="true" />
+                                <div className="ctm-docs__file">
+                                    <span className="ctm-docs__name">{file.name}</span>
+                                    <span className="ctm-docs__meta">{formatFileSize(file.size)}</span>
+                                </div>
+                                <button type="button" className="ctm-docs__remove" onClick={() => removeDocumentFile(file)}>
+                                    Удалить
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
+        </div>
+    );
 
     // динамический список категорий соц. поддержки
     const ssCategoryOptions =
@@ -474,6 +612,7 @@ ${text}
             };
 
             const signer = (vals.sign_name ?? me?.fullName ?? "").trim();
+            const attachments = await Promise.all(documentFiles.map(readDocumentFile));
 
             if (vals.topic === "Материальная поддержка") {
                 type = "Финансы";
@@ -494,7 +633,7 @@ ${text}
 
                 const digest = await sha256Base64(payload);
 
-                const cat = vals.ms_category!;
+                const cat = vals.ms_category! as (typeof MS_CATEGORIES)[number];
                 formData = {
                     ...formData,
                     materialSupport: {
@@ -509,6 +648,7 @@ ${text}
                             docsCommon: commonDocsHints,
                             docsForCategory: MS_DOCS[cat],
                         },
+                        attachments,
                     },
                     signature: {
                         kind: "demo-digital-signature",
@@ -561,6 +701,7 @@ ${text}
                             docsCommon: commonDocsHints,
                             docsForCategory: docsForCat,
                         },
+                        attachments,
                     },
                     signature: {
                         kind: "demo-digital-signature",
@@ -609,6 +750,52 @@ ${text}
 
     if (!open) return null;
 
+    const topicMenu =
+        topicSelectOpen && topicMenuRect
+            ? createPortal(
+                <div
+                    className="ctm-select__menu ctm-select__menu--portal"
+                    onMouseDown={(event) => event.stopPropagation()}
+                    style={{
+                        top: topicMenuRect.bottom + 8,
+                        left: topicMenuRect.left,
+                        width: topicMenuRect.width,
+                    }}
+                >
+                    <input
+                        className="ctm-select__search"
+                        value={topicSearch}
+                        onChange={(event) => setTopicSearch(event.target.value)}
+                        placeholder="Поиск темы..."
+                        autoFocus
+                    />
+                    <div className="ctm-select__list" role="listbox">
+                        {filteredTopics.length === 0 ? (
+                            <div className="ctm-select__empty">Ничего не найдено</div>
+                        ) : (
+                            filteredTopics.map((item) => (
+                                <button
+                                    key={item}
+                                    type="button"
+                                    className={`ctm-select__option ${item === topic ? "ctm-select__option--active" : ""}`}
+                                    onClick={() => {
+                                        setValue("topic", item, { shouldDirty: true, shouldValidate: true });
+                                        setTopicSelectOpen(false);
+                                        setTopicSearch("");
+                                    }}
+                                    role="option"
+                                    aria-selected={item === topic}
+                                >
+                                    {item}
+                                </button>
+                            ))
+                        )}
+                    </div>
+                </div>,
+                document.body
+            )
+            : null;
+
     return (
         <div className="ctm-overlay" onMouseDown={onClose}>
             <div className="ctm" onMouseDown={(e) => e.stopPropagation()}>
@@ -627,16 +814,25 @@ ${text}
                     {/* СКРОЛЛ-ТЕЛО */}
                     <div className="ctm__body">
                             <div className="ctm__grid">
-                            <label className="ctm__label">
+                            <div className="ctm__label">
                                 Тема обращения
-                                <select className="ctm__input" {...register("topic")}>
-                                    {TOPICS.map((t) => (
-                                        <option key={t} value={t}>
-                                            {t}
-                                        </option>
-                                    ))}
-                                </select>
-                            </label>
+                                <input type="hidden" {...register("topic")} />
+                                <div className={`ctm-select ${topicSelectOpen ? "ctm-select--open" : ""}`} ref={topicSelectRef}>
+                                    <button
+                                        type="button"
+                                        className="ctm-select__button"
+                                        onClick={() => {
+                                            setTopicSelectOpen((current) => !current);
+                                            setTopicSearch("");
+                                        }}
+                                        aria-haspopup="listbox"
+                                        aria-expanded={topicSelectOpen}
+                                    >
+                                        <span className="ctm-select__value">{topic}</span>
+                                        <span className="ctm-select__chevron" aria-hidden="true" />
+                                    </button>
+                                </div>
+                            </div>
 
                             <label className="ctm__label">
                                 Кратко (заголовок)
@@ -698,6 +894,8 @@ ${text}
                                     <div className="ctm__hint ctm__label--wide">
                                         <b>Документы по выбранной категории:</b> {msDocForCategory}
                                     </div>
+
+                                    {renderDocumentUpload()}
 
                                     <label className="ctm__label ctm__label--wide">
                                         Текст заявления
@@ -802,6 +1000,8 @@ ${text}
                                     <b>Документы по выбранной категории:</b> {ssDocForCategory}
                                 </div>
 
+                                {renderDocumentUpload()}
+
                                 <label className="ctm__label ctm__label--wide">
                                     Текст заявления
                                     <textarea
@@ -845,6 +1045,7 @@ ${text}
                     </div>
                 </form>
             </div>
+            {topicMenu}
         </div>
     );
 };
