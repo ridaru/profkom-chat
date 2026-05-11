@@ -1,5 +1,6 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../features/auth/store";
+import { db, type User } from "../db/db";
 import "../styles/prof-header.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -39,18 +40,38 @@ export default function ProfHeader() {
     const userId = useAuth((s) => s.userId);
     const logout = useAuth((s) => s.logout);
 
-    // подставь реальные поля из своего store
-    const fullName = useAuth((s: any) => s.fullName || s.name || s.fio || "Пользователь");
-    const role = useAuth((s: any) => s.role || "student");
-    const avatarUrl = useAuth((s: any) => s.avatarUrl || "");
-
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement | null>(null);
 
     const isHome = pathname === "/";
     const messengerHref = userId ? "/app" : "/login";
+    const fullName = currentUser?.fullName ?? "Пользователь";
+    const role = currentUser?.role ?? "student";
+    const avatarUrl = "";
+    const isAdmin = currentUser?.role === "admin";
 
     const initials = useMemo(() => getInitials(fullName), [fullName]);
+
+    useEffect(() => {
+        let ignore = false;
+
+        const loadCurrentUser = async () => {
+            if (!userId) {
+                setCurrentUser(null);
+                return;
+            }
+
+            const user = await db.users.get(userId);
+            if (!ignore) setCurrentUser(user ?? null);
+        };
+
+        void loadCurrentUser();
+
+        return () => {
+            ignore = true;
+        };
+    }, [userId, pathname]);
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
@@ -73,6 +94,11 @@ export default function ProfHeader() {
     const handleProfile = () => {
         setMenuOpen(false);
         navigate("/app/profile");
+    };
+
+    const handleAdmin = () => {
+        setMenuOpen(false);
+        navigate("/app/admin");
     };
 
     return (
@@ -106,7 +132,7 @@ export default function ProfHeader() {
                     <NavLink
                         className={({ isActive }) =>
                             `ph__link ph__link--accent ${
-                                isActive || pathname.startsWith("/app") || pathname.startsWith("/login") || pathname.startsWith("/register")
+                                isActive || pathname.startsWith("/app") || pathname.startsWith("/login")
                                     ? "is-active"
                                     : ""
                             }`
@@ -163,6 +189,11 @@ export default function ProfHeader() {
                                     <button type="button" className="ph__userMenuItem" onClick={handleProfile}>
                                         Личный кабинет
                                     </button>
+                                    {isAdmin && (
+                                        <button type="button" className="ph__userMenuItem" onClick={handleAdmin}>
+                                            Административная панель
+                                        </button>
+                                    )}
                                     <button type="button" className="ph__userMenuItem ph__userMenuItem--danger" onClick={handleLogout}>
                                         Выйти
                                     </button>

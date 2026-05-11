@@ -77,6 +77,11 @@ ease;
     font-size: 13px;
 }
 
+.auth__foot--stack {
+    display: grid;
+    gap: 4px;
+}
+
 .auth__foot a{
     color: #111;
     font-weight: 600;

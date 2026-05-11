@@ -38,6 +38,11 @@
     border-left: 2px solid var(--prof-purple);
 }
 
+.ticket-row--unread{
+    border-color: rgba(111,55,255,.34);
+    background: linear-gradient(90deg, rgba(111,55,255,.08), rgba(255,255,255,0) 78px), var(--card);
+}
+
 .ticket-row__top{
     display: flex;
     justify-content: space-between;
@@ -73,7 +78,6 @@
 
 .badge--new{ background: rgba(111,55,255,.10); border-color: rgba(111,55,255,.18); }
 .badge--in_progress{ background: rgba(0,0,0,.04); }
-.badge--need_info{ background: rgba(250,35,90,.10); border-color: rgba(250,35,90,.20); }
 .badge--closed{ background: rgba(0,0,0,.03); opacity: .85; }
 
 .ticket-list-wrap {

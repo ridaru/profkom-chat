@@ -15,7 +15,6 @@ type Props = {
 const statusRu: Record<Ticket["status"], string> = {
     new: "Новое",
     in_progress: "В работе",
-    need_info: "Нужна инфо",
     closed: "Закрыто",
 };
 
@@ -25,8 +24,6 @@ const statusFilters: { value: StatusFilter; label: string }[] = [
     { value: "all", label: "Все" },
     { value: "new", label: "Новые" },
     { value: "in_progress", label: "В работе" },
-    { value: "need_info", label: "Нужна инфо" },
-    { value: "closed", label: "Закрытые" },
 ];
 
 const TicketRow = ({
@@ -59,12 +56,19 @@ const TicketRow = ({
         return () => {
             alive = false;
         };
-    }, [t.id, t.updatedAt, role]);
+    }, [t.id, t.updatedAt, role, active]);
+
+    useEffect(() => {
+        if (!active || unread === 0) return;
+
+        const timer = window.setTimeout(() => setUnread(0), 1200);
+        return () => window.clearTimeout(timer);
+    }, [active, unread]);
 
     return (
         <button
             type="button"
-            className={`ticket-row ${active ? "ticket-row--active" : ""}`}
+            className={`ticket-row ${active ? "ticket-row--active" : ""} ${unread > 0 ? "ticket-row--unread" : ""}`}
             onClick={onClick}
         >
             <div className="ticket-row__top">

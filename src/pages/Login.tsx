@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { db, seedDatabase } from "../db/db";
 import { verifyPassword } from "../lib/crypto";
 import { useAuth } from "../features/auth/store";
@@ -9,7 +9,7 @@ const LoginPage = () => {
     const navigate = useNavigate();
     const login = useAuth((s) => s.login);
 
-    const [email, setEmail] = useState("");
+    const [identifier, setIdentifier] = useState("");
     const [password, setPassword] = useState("");
 
     const [boot, setBoot] = useState(true);
@@ -33,8 +33,10 @@ const LoginPage = () => {
         setLoading(true);
 
         try {
-            const emailNorm = email.toLowerCase().trim();
-            const user = await db.users.where("email").equals(emailNorm).first();
+            const loginValue = identifier.toLowerCase().trim();
+            const user = loginValue.includes("@")
+                ? await db.users.where("email").equals(loginValue).first()
+                : await db.users.where("studentCard").equals(loginValue).first();
 
             if (!user) {
                 setError("Пользователь не найден");
@@ -61,7 +63,9 @@ const LoginPage = () => {
             <div className="auth__card">
                 <div className="auth__head">
                     <div className="auth__title">Вход</div>
-                    <div className="auth__subtitle">Профком «СТАНКИН» · Мессенджер</div>
+                    <div className="auth__subtitle">
+                        Авторизация доступна только студентам и сотрудникам МГТУ «СТАНКИН»
+                    </div>
                 </div>
 
                 {boot ? (
@@ -69,13 +73,13 @@ const LoginPage = () => {
                 ) : (
                     <form className="auth__form" onSubmit={onSubmit}>
                         <label className="auth__label">
-                            Email
+                            Email или номер студенческого билета
                             <input
                                 className="auth__input"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                autoComplete="email"
-                                placeholder="you@example.com"
+                                value={identifier}
+                                onChange={(e) => setIdentifier(e.target.value)}
+                                autoComplete="username"
+                                placeholder="Email или номер студенческого билета"
                             />
                         </label>
 
@@ -97,9 +101,6 @@ const LoginPage = () => {
                             {loading ? "Входим…" : "Войти"}
                         </button>
 
-                        <div className="auth__foot">
-                            Нет аккаунта? <Link to="/register">Регистрация</Link>
-                        </div>
                     </form>
                 )}
             </div>

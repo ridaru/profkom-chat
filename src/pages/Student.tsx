@@ -13,13 +13,30 @@ const StudentPage = () => {
     const [tickets, setTickets] = useState<Ticket[]>([]);
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [createOpen, setCreateOpen] = useState(false);
+    const [viewMode, setViewMode] = useState<"active" | "archive">("active");
+    const [unreadTotal, setUnreadTotal] = useState(0);
 
     const role: UserRole | null = me?.role ?? null;
     const isStudent = role === "student";
 
+    const visibleTickets = useMemo(
+        () => tickets.filter((ticket) => (
+            viewMode === "archive" ? ticket.status === "closed" : ticket.status !== "closed"
+        )),
+        [tickets, viewMode]
+    );
+
+    const effectiveSelectedId = useMemo(() => {
+        if (selectedId && visibleTickets.some((ticket) => ticket.id === selectedId)) {
+            return selectedId;
+        }
+
+        return visibleTickets[0]?.id ?? null;
+    }, [selectedId, visibleTickets]);
+
     const selectedTicket = useMemo(
-        () => tickets.find((t) => t.id === selectedId) ?? null,
-        [tickets, selectedId]
+        () => visibleTickets.find((t) => t.id === effectiveSelectedId) ?? null,
+        [visibleTickets, effectiveSelectedId]
     );
 
     const reloadTickets = async (userRole: UserRole | null) => {
@@ -34,11 +51,20 @@ const StudentPage = () => {
         data.sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
         setTickets(data);
 
-        if (!selectedId && data.length > 0) setSelectedId(data[0].id);
-        if (selectedId && data.length > 0 && !data.some((t) => t.id === selectedId)) {
-            setSelectedId(data[0].id);
-        }
-        if (data.length === 0) setSelectedId(null);
+        const unreadCounts = await Promise.all(
+            data.map(async (ticket) => {
+                return db.messages
+                    .where("ticketId")
+                    .equals(ticket.id)
+                    .filter((message) => (
+                        userRole === "student"
+                            ? !message.isReadByStudent
+                            : !message.isReadByOperator
+                    ))
+                    .count();
+            })
+        );
+        setUnreadTotal(unreadCounts.reduce((sum, count) => sum + count, 0));
     };
 
     useEffect(() => {
@@ -55,12 +81,46 @@ const StudentPage = () => {
         <div className="student-page">
             <aside className="student-page__left">
                 <div className="student-page__leftHeader">
-                    <div className="student-page__title">
-                        <h1 className="student-page__h1">
-                            {isStudent ? "Мои обращения" : "Все обращения"}
-                        </h1>
-                        {me && <div className="student-page__sub">Вы вошли как: {me.fullName}</div>}
-                    </div>
+                    <button
+                        type="button"
+                        className={`student-page__h1Btn ${viewMode === "active" ? "student-page__h1Btn--active" : ""}`}
+                        onClick={() => setViewMode("active")}
+                    >
+                        {viewMode === "archive" ? "Архив" : "Обращения"}
+                        {unreadTotal > 0 && (
+                            <span className="student-page__unread">{unreadTotal}</span>
+                        )}
+                    </button>
+
+                    <button
+                        type="button"
+                        className={`student-page__archiveBtn ${viewMode === "archive" ? "student-page__archiveBtn--active" : ""}`}
+                        onClick={() => setViewMode(viewMode === "archive" ? "active" : "archive")}
+                        aria-label={viewMode === "archive" ? "Вернуться к обращениям" : "Архив обращений"}
+                        title={viewMode === "archive" ? "Вернуться к обращениям" : "Архив обращений"}
+                    >
+                        {viewMode === "archive" ? (
+                            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path
+                                    d="M15 6 9 12l6 6M10 12h10"
+                                    stroke="currentColor"
+                                    strokeWidth="1.9"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                />
+                            </svg>
+                        ) : (
+                            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path
+                                    d="M4.5 8.5h15m-13 0V18a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2V8.5m-11 0L8 4.75A1.3 1.3 0 0 1 9.2 4h5.6a1.3 1.3 0 0 1 1.2.75l1.5 3.75M9.5 12h5"
+                                    stroke="currentColor"
+                                    strokeWidth="1.8"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                />
+                            </svg>
+                        )}
+                    </button>
 
                     {isStudent && (
                         <button
@@ -75,8 +135,9 @@ const StudentPage = () => {
                 </div>
 
                 <TicketList
-                    tickets={tickets}
-                    selectedId={selectedId}
+                    key={viewMode}
+                    tickets={visibleTickets}
+                    selectedId={effectiveSelectedId}
                     onSelect={setSelectedId}
                     currentUserId={userId}
                     role={role ?? "student"}
@@ -98,6 +159,8 @@ const StudentPage = () => {
                             <p>
                                 {isStudent
                                     ? "Нажмите «Новое обращение», чтобы создать обращение."
+                                    : viewMode === "archive"
+                                    ? "Архив закрытых обращений пуст."
                                     : "Список обращений пуст."}
                             </p>
                         </div>
@@ -111,6 +174,7 @@ const StudentPage = () => {
                     onClose={() => setCreateOpen(false)}
                     currentUserId={userId}
                     onCreated={(id) => {
+                        setViewMode("active");
                         setSelectedId(id);
                         void reloadTickets(role);
                     }}

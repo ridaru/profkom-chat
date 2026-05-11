@@ -13,6 +13,8 @@ const ProfilePage = () => {
     const [studentCard, setStudentCard] = useState("");
     const [studyForm, setStudyForm] = useState<User["studyForm"]>("Очная");
     const [group, setGroup] = useState("");
+    const [course, setCourse] = useState("");
+    const [educationLevel, setEducationLevel] = useState("");
 
     const loadUser = async () => {
         const data = await db.users.get(userId);
@@ -22,6 +24,8 @@ const ProfilePage = () => {
             setStudentCard(data.studentCard ?? "");
             setStudyForm(data.studyForm ?? "Очная");
             setGroup(data.group ?? "");
+            setCourse(data.course ?? "");
+            setEducationLevel(data.educationLevel ?? "");
         }
     };
 
@@ -38,6 +42,8 @@ const ProfilePage = () => {
                 studentCard: studentCard.trim(),
                 studyForm,
                 group: group.trim(),
+                course: course.trim(),
+                educationLevel: educationLevel.trim(),
             });
 
             await loadUser();
@@ -51,13 +57,13 @@ const ProfilePage = () => {
 
         setEdsBusy(true);
         try {
-            // демо-подключение ЭЦП для дипломного проекта
+            // Демо-подключение подписи заявления для дипломного проекта.
             const now = new Date().toISOString();
 
             await db.users.update(user.id, {
                 edsEnabled: true,
-                edsCertificateName: `Сертификат ${user.fullName}`,
-                edsCertificateSerial: `CERT-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
+                edsCertificateName: `Демо-ключ подписи ${user.fullName}`,
+                edsCertificateSerial: `DEMO-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
                 edsConnectedAt: now,
             });
 
@@ -101,7 +107,7 @@ const ProfilePage = () => {
                         <div>
                             <h1 className="profile-title">Личный кабинет</h1>
                             <div className="profile-subtitle">
-                                Информация о пользователе и настройка электронной подписи
+                                Информация о пользователе и настройка демо-подписи заявления
                             </div>
                         </div>
                     </div>
@@ -175,6 +181,28 @@ const ProfilePage = () => {
                                 disabled={user.role !== "student"}
                             />
                         </label>
+
+                        <label className="profile-field">
+                            <span className="profile-label">Курс</span>
+                            <input
+                                className="profile-input"
+                                value={course}
+                                onChange={(e) => setCourse(e.target.value)}
+                                placeholder="Например: 4"
+                                disabled={user.role !== "student"}
+                            />
+                        </label>
+
+                        <label className="profile-field">
+                            <span className="profile-label">Уровень образования</span>
+                            <input
+                                className="profile-input"
+                                value={educationLevel}
+                                onChange={(e) => setEducationLevel(e.target.value)}
+                                placeholder="Например: Бакалавриат"
+                                disabled={user.role !== "student"}
+                            />
+                        </label>
                     </div>
 
                     {user.role === "student" && (
@@ -194,9 +222,9 @@ const ProfilePage = () => {
                 <section className="profile-card">
                     <div className="profile-card__head">
                         <div>
-                            <h2 className="profile-section-title">Электронная цифровая подпись</h2>
+                            <h2 className="profile-section-title">Демо-подпись заявления</h2>
                             <div className="profile-subtitle">
-                                Подключение подписи для подтверждения и отправки заявлений
+                                Учебная модель подписи для подтверждения отправки заявлений в рамках дипломного проекта
                             </div>
                         </div>
 
@@ -214,13 +242,13 @@ const ProfilePage = () => {
                             <div className="profile-eds__label">Статус</div>
                             <div className="profile-eds__value">
                                 {user.edsEnabled
-                                    ? "Электронная подпись активна"
-                                    : "Электронная подпись ещё не подключена"}
+                                    ? "Демо-подпись активна"
+                                    : "Демо-подпись ещё не подключена"}
                             </div>
                         </div>
 
                         <div className="profile-eds__item">
-                            <div className="profile-eds__label">Сертификат</div>
+                            <div className="profile-eds__label">Ключ подписи</div>
                             <div className="profile-eds__value">
                                 {user.edsCertificateName || "Нет данных"}
                             </div>
@@ -244,9 +272,9 @@ const ProfilePage = () => {
                     </div>
 
                     <div className="profile-note">
-                        В текущей версии реализован интерфейс подключения ЭЦП и хранение данных о сертификате.
-                        Для реального использования квалифицированной электронной подписи потребуется интеграция
-                        с внешним криптопровайдером и сертификатами пользователя.
+                        В прототипе используется демонстрационная модель подписи на базе Web Crypto API.
+                        Она показывает принцип подписания и проверки целостности заявления, но не является
+                        юридически значимой квалифицированной электронной подписью.
                     </div>
 
                     <div className="profile-actions">
@@ -257,7 +285,7 @@ const ProfilePage = () => {
                                 onClick={handleConnectEds}
                                 disabled={edsBusy}
                             >
-                                {edsBusy ? "Подключаем..." : "Подключить ЭЦП"}
+                                {edsBusy ? "Подключаем..." : "Подключить демо-подпись"}
                             </button>
                         ) : (
                             <button
@@ -266,7 +294,7 @@ const ProfilePage = () => {
                                 onClick={handleDisconnectEds}
                                 disabled={edsBusy}
                             >
-                                {edsBusy ? "Отключаем..." : "Отключить ЭЦП"}
+                                {edsBusy ? "Отключаем..." : "Отключить демо-подпись"}
                             </button>
                         )}
                     </div>

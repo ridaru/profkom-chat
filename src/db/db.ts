@@ -1,5 +1,3 @@
-import Dexie from "dexie";
-import type { Table } from "dexie";
 import { hashPassword } from "../lib/crypto";
 
 export type UserRole = "student" | "operator" | "admin";
@@ -9,25 +7,21 @@ export interface User {
     fullName: string;
     email: string;
     role: UserRole;
-
     passSaltB64: string;
     passHashB64: string;
-
     createdAt: string;
-
-    // профиль
     studentCard?: string;
-    studyForm?: "Очная" | "Очно-заочная" | "Заочная";
+    studyForm?: string;
     group?: string;
-
-    // ЭЦП (демо-модель)
+    course?: string;
+    educationLevel?: string;
     edsEnabled?: boolean;
     edsCertificateName?: string;
     edsCertificateSerial?: string;
     edsConnectedAt?: string;
 }
 
-export type TicketStatus = "new" | "in_progress" | "need_info" | "closed";
+export type TicketStatus = "new" | "in_progress" | "closed";
 
 export interface Ticket {
     id: string;
@@ -51,26 +45,154 @@ export interface Message {
     isReadByOperator: boolean;
 }
 
-export class AppDB extends Dexie {
-    users!: Table<User, string>;
-    tickets!: Table<Ticket, string>;
-    messages!: Table<Message, string>;
+type ResourceName = "users" | "tickets" | "messages";
+type Filter<T> = (item: T) => boolean;
 
-    constructor() {
-        super("ProfkomSupportDB");
+const API_BASE = import.meta.env.VITE_API_URL ?? "/api";
 
-        // v2 — текущая версия
-        this.version(2).stores({
-            users: "id, email, role, fullName, createdAt",
-            tickets: "id, studentId, status, updatedAt, createdAt",
-            messages: "id, ticketId, createdAt, authorId",
+async function api<T>(path: string, init?: RequestInit): Promise<T> {
+    const response = await fetch(`${API_BASE}${path}`, {
+        ...init,
+        headers: {
+            "Content-Type": "application/json",
+            ...init?.headers,
+        },
+    });
+
+    if (response.status === 404 && (!init?.method || init.method === "GET")) {
+        return undefined as T;
+    }
+
+    if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error ?? `API request failed: ${response.status}`);
+    }
+
+    if (response.status === 204) return undefined as T;
+    return response.json() as Promise<T>;
+}
+
+class QueryApi<T extends { id: string }> {
+    private readonly table: TableApi<T>;
+    private readonly field: keyof T;
+    private readonly value: unknown;
+    private readonly filters: Filter<T>[];
+
+    constructor(
+        table: TableApi<T>,
+        field: keyof T,
+        value: unknown,
+        filters: Filter<T>[] = []
+    ) {
+        this.table = table;
+        this.field = field;
+        this.value = value;
+        this.filters = filters;
+    }
+
+    filter(predicate: Filter<T>) {
+        return new QueryApi(this.table, this.field, this.value, [...this.filters, predicate]);
+    }
+
+    async toArray() {
+        const items = await this.table.list({ [this.field]: this.value });
+        return this.filters.reduce((current, predicate) => current.filter(predicate), items);
+    }
+
+    async first() {
+        const [item] = await this.toArray();
+        return item;
+    }
+
+    async count() {
+        return (await this.toArray()).length;
+    }
+}
+
+class WhereApi<T extends { id: string }> {
+    private readonly table: TableApi<T>;
+    private readonly field: keyof T;
+
+    constructor(table: TableApi<T>, field: keyof T) {
+        this.table = table;
+        this.field = field;
+    }
+
+    equals(value: unknown) {
+        return new QueryApi(this.table, this.field, value);
+    }
+}
+
+class TableApi<T extends { id: string }> {
+    private readonly resource: ResourceName;
+
+    constructor(resource: ResourceName) {
+        this.resource = resource;
+    }
+
+    async list(params: Record<string, unknown> = {}) {
+        const query = new URLSearchParams();
+
+        Object.entries(params).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) query.set(key, String(value));
+        });
+
+        const suffix = query.size > 0 ? `?${query.toString()}` : "";
+        return api<T[]>(`/${this.resource}${suffix}`);
+    }
+
+    async toArray() {
+        return this.list();
+    }
+
+    async get(id: string) {
+        return api<T | undefined>(`/${this.resource}/${encodeURIComponent(id)}`);
+    }
+
+    where(field: keyof T) {
+        return new WhereApi(this, field);
+    }
+
+    async count() {
+        return (await this.toArray()).length;
+    }
+
+    async add(item: T) {
+        return api<T>(`/${this.resource}`, {
+            method: "POST",
+            body: JSON.stringify(item),
+        });
+    }
+
+    async bulkAdd(items: T[]) {
+        await Promise.all(items.map((item) => this.add(item)));
+    }
+
+    async put(item: T) {
+        return api<T>(`/${this.resource}/${encodeURIComponent(item.id)}`, {
+            method: "PUT",
+            body: JSON.stringify(item),
+        });
+    }
+
+    async bulkPut(items: T[]) {
+        await Promise.all(items.map((item) => this.put(item)));
+    }
+
+    async update(id: string, patch: Partial<T>) {
+        return api<T>(`/${this.resource}/${encodeURIComponent(id)}`, {
+            method: "PATCH",
+            body: JSON.stringify(patch),
         });
     }
 }
 
-export const db = new AppDB();
+export const db = {
+    users: new TableApi<User>("users"),
+    tickets: new TableApi<Ticket>("tickets"),
+    messages: new TableApi<Message>("messages"),
+};
 
-/** создаём 2 служебных аккаунта + демо-студента */
 export async function seedDatabase() {
     const count = await db.users.count();
     if (count > 0) return;
@@ -81,7 +203,8 @@ export async function seedDatabase() {
         fullName: string,
         email: string,
         role: UserRole,
-        password: string
+        password: string,
+        profile?: Pick<User, "studentCard" | "studyForm" | "group" | "course" | "educationLevel">
     ): Promise<User> => {
         const { saltB64, hashB64 } = await hashPassword(password);
         return {
@@ -92,12 +215,25 @@ export async function seedDatabase() {
             passSaltB64: saltB64,
             passHashB64: hashB64,
             createdAt: now,
+            ...profile,
         };
     };
 
-    const operator = await mkUser("Оператор 1", "operator@stankin.ru", "operator", "123456");
-    const admin = await mkUser("Админ", "admin@stankin.ru", "admin", "123456");
-    const student = await mkUser("Иван Иванов", "student@stankin.ru", "student", "123456");
+    const operator = await mkUser("РћРїРµСЂР°С‚РѕСЂ 1", "operator@stankin.ru", "operator", "123456");
+    const admin = await mkUser("РђРґРјРёРЅ", "admin@stankin.ru", "admin", "123456");
+    const student = await mkUser(
+        "Журавлева Ирина Александровна",
+        "student@stankin.ru",
+        "student",
+        "st123456",
+        {
+            studentCard: "st123456",
+            studyForm: "Очная",
+            group: "ИДБ-22-11",
+            course: "4",
+            educationLevel: "Бакалавриат",
+        }
+    );
 
     await db.users.bulkAdd([operator, admin, student]);
 }

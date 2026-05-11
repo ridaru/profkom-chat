@@ -1,10 +1,10 @@
 .student-page{
-    width: min(1680px, calc(100% - 48px));
+    width: min(1920px, calc(100% - 24px));
     margin: 0 auto;
     padding: 18px 0 42px;
 
     display: grid;
-    grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+    grid-template-columns: minmax(320px, 400px) minmax(0, 1fr);
     gap: 18px;
     align-items: start;
 }
@@ -16,7 +16,7 @@
 
 .student-page__leftHeader{
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     justify-content: space-between;
     gap: 12px;
     margin-bottom: 12px;
@@ -41,12 +41,75 @@
     font-size: 18px;
     font-weight: 500;
     overflow-wrap: anywhere;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
 }
 
-.student-page__sub{
-    margin-top: 4px;
-    font-size: 13px;
-    color: var(--muted);
+.student-page__h1Btn{
+    border: none;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    color: #111;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.student-page__h1Btn:hover{
+    opacity: .78;
+}
+
+.student-page__h1Btn--active{
+    color: #111;
+}
+
+.student-page__archiveBtn{
+    width: 42px;
+    height: 42px;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: #8d96a7;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    flex-shrink: 0;
+    transition: color .15s ease, transform .15s ease, opacity .15s ease;
+}
+
+.student-page__archiveBtn svg{
+    width: 32px;
+    height: 32px;
+}
+
+.student-page__archiveBtn:hover,
+.student-page__archiveBtn--active{
+    color: #5f6878;
+}
+
+.student-page__archiveBtn:hover{
+    transform: scale(1.04);
+}
+
+.student-page__unread{
+    min-width: 24px;
+    height: 24px;
+    padding: 0 8px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--prof-purple);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
 }
 
 /* КНОПКА "Новое" как на сайте: светлая пилюля */

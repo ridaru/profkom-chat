@@ -4,9 +4,9 @@ import ProtectedRoute from "./app/ProtectedRoute";
 
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/Login";
-import RegisterPage from "./pages/Register";
 import StudentPage from "./pages/Student";
 import ProfilePage from "./pages/ProfilePage";
+import AdminPage from "./pages/AdminPage";
 
 export default function App() {
     return (
@@ -15,7 +15,7 @@ export default function App() {
                 <Route element={<SiteShell />}>
                     <Route path="/" element={<HomePage />} />
                     <Route path="/login" element={<LoginPage />} />
-                    <Route path="/register" element={<RegisterPage />} />
+                    <Route path="/register" element={<Navigate to="/login" replace />} />
 
                     <Route
                         path="/app"
@@ -31,6 +31,15 @@ export default function App() {
                         element={
                             <ProtectedRoute>
                                 <ProfilePage />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/app/admin"
+                        element={
+                            <ProtectedRoute>
+                                <AdminPage />
                             </ProtectedRoute>
                         }
                     />

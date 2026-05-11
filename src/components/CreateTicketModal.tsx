@@ -4,7 +4,7 @@ import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { db, type Ticket, type User } from "../db/db";
-import { sha256Base64 } from "../lib/digest";
+import { signPayload, type DemoSignature } from "../lib/signature";
 import "../styles/create-ticket.css";
 
 const TOPICS = [
@@ -50,7 +50,7 @@ const MS_DOCS: Record<(typeof MS_CATEGORIES)[number], string> = {
 
 const MS_CAT_ENUM = MS_CATEGORIES as unknown as [string, ...string[]];
 
-const RECTOR_TO_DEFAULT = "Ректору ФГБОУ ВО «МГТУ «СТАНКИН»";
+const RECTOR_TO_DEFAULT = "Ректору ФГАОУ ВО «МГТУ «СТАНКИН»\nПадалкину Б. В.";
 const PROFKOM_TO_DEFAULT = "В профком обучающихся МГТУ «СТАНКИН»";
 
 // ===== Соц. поддержка =====
@@ -229,7 +229,9 @@ type Props = {
     open: boolean;
     onClose: () => void;
     currentUserId: string;
-    onCreated: (ticketId: string) => void;
+    onCreated?: (ticketId: string) => void;
+    onSaved?: (ticketId: string) => void;
+    initialTicket?: Ticket;
 };
 
 type DocumentAttachment = {
@@ -276,15 +278,55 @@ type TicketFormData = {
     };
 
     signature?: {
-        kind: "demo-digital-signature";
+        kind: "demo-digital-signature" | DemoSignature["kind"];
         signer: string;
         signedAt: string;
-        digestSha256B64: string;
+        digestSha256B64?: string;
+        algorithm?: DemoSignature["algorithm"];
+        certificateSerial?: string;
+        publicKeyJwk?: JsonWebKey;
+        signatureB64?: string;
+        signedPayload?: string;
         statementPreview: string;
     };
 };
 
-const CreateTicketModal = ({ open, onClose, currentUserId, onCreated }: Props) => {
+function formValuesFromTicket(ticket?: Ticket, signer = ""): FormInput {
+    const data = (ticket?.formData ?? {}) as TicketFormData;
+    const material = data.materialSupport;
+    const social = data.socialSupport;
+    const signature = data.signature;
+
+    return {
+        topic: ticket?.topic ?? "Материальная поддержка",
+        title: data.title ?? "",
+        description: data.description ?? "",
+
+        ms_to: material?.to ?? RECTOR_TO_DEFAULT,
+        ms_group: material?.group ?? "",
+        ms_studentCard: material?.studentCard ?? "",
+        ms_category: material?.category ?? MS_CATEGORIES[0],
+        ms_statementText: material?.statementText ?? "",
+        ms_confirmUnionAndCitizen: material?.confirmUnionAndCitizen ?? false,
+
+        ss_to: social?.to ?? PROFKOM_TO_DEFAULT,
+        ss_level: social?.level ?? "Студент",
+        ss_group: social?.group ?? "",
+        ss_studentCard: social?.studentCard ?? "",
+        ss_category: social?.category ?? SS_STUDENT_CATEGORIES[0],
+        ss_statementText: social?.statementText ?? "",
+
+        sign_name: signature?.signer ?? signer,
+        sign_agree: Boolean(signature),
+    };
+}
+
+function attachmentsFromTicket(ticket?: Ticket): DocumentAttachment[] {
+    const data = (ticket?.formData ?? {}) as TicketFormData;
+    return data.materialSupport?.attachments ?? data.socialSupport?.attachments ?? [];
+}
+
+const CreateTicketModal = ({ open, onClose, currentUserId, onCreated, onSaved, initialTicket }: Props) => {
     const [me, setMe] = useState<User | null>(null);
     const [busy, setBusy] = useState(false);
     const [documentFiles, setDocumentFiles] = useState<File[]>([]);
@@ -292,6 +334,7 @@ const CreateTicketModal = ({ open, onClose, currentUserId, onCreated }: Props) =
     const [topicSearch, setTopicSearch] = useState("");
     const topicSelectRef = useRef<HTMLDivElement | null>(null);
     const [topicMenuRect, setTopicMenuRect] = useState<DOMRect | null>(null);
+    const isEdit = Boolean(initialTicket);
 
     const {
         register,
@@ -336,42 +379,23 @@ const CreateTicketModal = ({ open, onClose, currentUserId, onCreated }: Props) =
         const load = async () => {
             const u = await db.users.get(currentUserId);
             setMe(u ?? null);
-            if (u?.fullName) setValue("sign_name", u.fullName);
-            setValue("ms_to", RECTOR_TO_DEFAULT);
-            setValue("ss_to", PROFKOM_TO_DEFAULT);
+            if (!initialTicket) {
+                if (u?.fullName) setValue("sign_name", u.fullName);
+                setValue("ms_to", RECTOR_TO_DEFAULT);
+                setValue("ss_to", PROFKOM_TO_DEFAULT);
+            }
         };
 
         void load();
-    }, [open, currentUserId, setValue]);
+    }, [open, currentUserId, initialTicket, setValue]);
 
     useEffect(() => {
         if (!open) return;
 
         setDocumentFiles([]);
-        reset({
-            topic: "Материальная поддержка",
-            title: "",
-            description: "",
-
-            ms_to: RECTOR_TO_DEFAULT,
-            ms_group: "",
-            ms_studentCard: "",
-            ms_category: MS_CATEGORIES[0],
-            ms_statementText: "",
-            ms_confirmUnionAndCitizen: false,
-
-            ss_to: PROFKOM_TO_DEFAULT,
-            ss_level: "Студент",
-            ss_group: "",
-            ss_studentCard: "",
-            ss_category: SS_STUDENT_CATEGORIES[0],
-            ss_statementText: "",
-
-            sign_name: me?.fullName ?? "",
-            sign_agree: false,
-        });
+        reset(formValuesFromTicket(initialTicket, me?.fullName ?? ""));
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [open]);
+    }, [open, initialTicket?.id]);
 
     useEffect(() => {
         if (!open) {
@@ -555,7 +579,6 @@ const CreateTicketModal = ({ open, onClose, currentUserId, onCreated }: Props) =
         const text = values?.ms_statementText ?? "";
 
         return `${to}
-
 от студента(ки) группы ${group}
 ${fio}
 студенческий билет № ${card}
@@ -602,7 +625,7 @@ ${text}
         try {
             const vals: FormOutput = schema.parse(raw);
             const now = new Date().toISOString();
-            const id = crypto.randomUUID();
+            const id = initialTicket?.id ?? crypto.randomUUID();
 
             let type = "Общее";
 
@@ -612,7 +635,8 @@ ${text}
             };
 
             const signer = (vals.sign_name ?? me?.fullName ?? "").trim();
-            const attachments = await Promise.all(documentFiles.map(readDocumentFile));
+            const newAttachments = await Promise.all(documentFiles.map(readDocumentFile));
+            const attachments = [...attachmentsFromTicket(initialTicket), ...newAttachments];
 
             if (vals.topic === "Материальная поддержка") {
                 type = "Финансы";
@@ -631,7 +655,7 @@ ${text}
                     signedAt: now,
                 });
 
-                const digest = await sha256Base64(payload);
+                const signature = await signPayload(currentUserId, signer, payload, now);
 
                 const cat = vals.ms_category! as (typeof MS_CATEGORIES)[number];
                 formData = {
@@ -651,10 +675,7 @@ ${text}
                         attachments,
                     },
                     signature: {
-                        kind: "demo-digital-signature",
-                        signer,
-                        signedAt: now,
-                        digestSha256B64: digest,
+                        ...signature,
                         statementPreview: msPreview,
                     },
                 };
@@ -677,7 +698,7 @@ ${text}
                     signedAt: now,
                 });
 
-                const digest = await sha256Base64(payload);
+                const signature = await signPayload(currentUserId, signer, payload, now);
 
                 const lvl = (vals.ss_level ?? "Студент") as "Студент" | "Аспирант";
                 const cat = (vals.ss_category ?? "").trim();
@@ -704,44 +725,62 @@ ${text}
                         attachments,
                     },
                     signature: {
-                        kind: "demo-digital-signature",
-                        signer,
-                        signedAt: now,
-                        digestSha256B64: digest,
+                        ...signature,
                         statementPreview: ssPreview,
                     },
                 };
             }
 
-            const ticket: Ticket = {
-                id,
-                studentId: currentUserId,
-                topic: vals.topic,
-                type,
-                status: "new",
-                createdAt: now,
-                updatedAt: now,
-                formData,
-            };
+            if (initialTicket) {
+                await db.tickets.update(initialTicket.id, {
+                    topic: vals.topic,
+                    type,
+                    updatedAt: now,
+                    formData,
+                });
 
-            await db.tickets.add(ticket);
+                await db.messages.add({
+                    id: crypto.randomUUID(),
+                    ticketId: initialTicket.id,
+                    authorId: currentUserId,
+                    text: "Данные обращения обновлены.",
+                    createdAt: now,
+                    isReadByStudent: true,
+                    isReadByOperator: false,
+                });
 
-            await db.messages.add({
-                id: crypto.randomUUID(),
-                ticketId: id,
-                authorId: currentUserId,
-                text:
-                    vals.topic === "Материальная поддержка"
-                        ? `Создано обращение: Материальная поддержка (${vals.ms_category}).`
-                        : vals.topic === "Социальная поддержка"
-                            ? `Создано обращение: Социальная поддержка (${vals.ss_level}, ${vals.ss_category}).`
-                            : `Создано обращение: ${vals.topic}. ${vals.title}`,
-                createdAt: now,
-                isReadByStudent: true,
-                isReadByOperator: false,
-            });
+                onSaved?.(initialTicket.id);
+            } else {
+                const ticket: Ticket = {
+                    id,
+                    studentId: currentUserId,
+                    topic: vals.topic,
+                    type,
+                    status: "new",
+                    createdAt: now,
+                    updatedAt: now,
+                    formData,
+                };
 
-            onCreated(id);
+                await db.tickets.add(ticket);
+
+                await db.messages.add({
+                    id: crypto.randomUUID(),
+                    ticketId: id,
+                    authorId: currentUserId,
+                    text:
+                        vals.topic === "Материальная поддержка"
+                            ? `Создано обращение: Материальная поддержка (${vals.ms_category}).`
+                            : vals.topic === "Социальная поддержка"
+                                ? `Создано обращение: Социальная поддержка (${vals.ss_level}, ${vals.ss_category}).`
+                                : `Создано обращение: ${vals.topic}. ${vals.title}`,
+                    createdAt: now,
+                    isReadByStudent: true,
+                    isReadByOperator: false,
+                });
+
+                onCreated?.(id);
+            }
             onClose();
         } finally {
             setBusy(false);
@@ -801,8 +840,10 @@ ${text}
             <div className="ctm" onMouseDown={(e) => e.stopPropagation()}>
                 <div className="ctm__head">
                     <div>
-                        <div className="ctm__title">Новое обращение</div>
-                        <div className="ctm__sub">Заполните форму и отправьте обращение</div>
+                        <div className="ctm__title">{isEdit ? "Редактирование обращения" : "Новое обращение"}</div>
+                        <div className="ctm__sub">
+                            {isEdit ? "Измените данные обращения и сохраните правки" : "Заполните форму и отправьте обращение"}
+                        </div>
                     </div>
 
                     <button type="button" className="ctm__x" onClick={onClose} aria-label="Закрыть">
@@ -916,17 +957,17 @@ ${text}
                                         <div className="ctm__err ctm__label--wide">{String(errors.ms_confirmUnionAndCitizen.message)}</div>
                                     )}
 
-                                    <div className="ctm__section ctm__label--wide">Цифровая подпись (демо)</div>
+                                    <div className="ctm__section ctm__label--wide">Демо-подпись заявления</div>
 
                                     <label className="ctm__label ctm__label--wide">
-                                        Подписант (ФИО)
+                                        Подписант
                                         <input className="ctm__input" {...register("sign_name")} placeholder={me?.fullName ?? "ФИО"} />
                                         {errors.sign_name && <div className="ctm__err">{String(errors.sign_name.message)}</div>}
                                     </label>
 
                                     <label className="ctm__check ctm__label--wide">
                                         <input type="checkbox" {...register("sign_agree")} />
-                                        Подтверждаю достоверность данных и согласен(на) на обработку персональных данных
+                                        Подтверждаю достоверность данных и понимаю, что в прототипе используется учебная модель подписи
                                     </label>
                                     {errors.sign_agree && <div className="ctm__err ctm__label--wide">{String(errors.sign_agree.message)}</div>}
 
@@ -1013,17 +1054,17 @@ ${text}
                                     {errors.ss_statementText && <div className="ctm__err">{String(errors.ss_statementText.message)}</div>}
                                 </label>
 
-                                <div className="ctm__section ctm__label--wide">Цифровая подпись (демо)</div>
+                                <div className="ctm__section ctm__label--wide">Демо-подпись заявления</div>
 
                                 <label className="ctm__label ctm__label--wide">
-                                    Подписант (ФИО)
+                                    Подписант
                                     <input className="ctm__input" {...register("sign_name")} placeholder={me?.fullName ?? "ФИО"} />
                                     {errors.sign_name && <div className="ctm__err">{String(errors.sign_name.message)}</div>}
                                 </label>
 
                                 <label className="ctm__check ctm__label--wide">
                                     <input type="checkbox" {...register("sign_agree")} />
-                                    Подтверждаю достоверность данных и согласен(на) на обработку персональных данных
+                                    Подтверждаю достоверность данных и понимаю, что в прототипе используется учебная модель подписи
                                 </label>
                                 {errors.sign_agree && <div className="ctm__err ctm__label--wide">{String(errors.sign_agree.message)}</div>}
 
@@ -1040,7 +1081,7 @@ ${text}
                             Отмена
                         </button>
                         <button type="submit" className="ctm-btn ctm-btn--primary" disabled={busy}>
-                            {busy ? "Создаём…" : "Создать обращение"}
+                            {busy ? "Сохраняем…" : isEdit ? "Сохранить изменения" : "Создать обращение"}
                         </button>
                     </div>
                 </form>

@@ -1,0 +1,232 @@
+.admin-page {
+    width: 100%;
+    min-width: 0;
+}
+
+.admin-panel {
+    width: min(1680px, calc(100% - 48px));
+    margin: 0 auto;
+    padding: 24px;
+    background: #fff;
+    border: 1px solid #e2e8f3;
+    border-radius: 20px;
+    box-shadow: 0 12px 30px rgba(33, 76, 137, 0.06);
+}
+
+.admin-panel__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 22px;
+}
+
+.admin-title {
+    margin: 0;
+    font-size: 28px;
+    line-height: 1.15;
+    color: #000;
+    font-weight: 600;
+}
+
+.admin-subtitle {
+    margin-top: 6px;
+    color: #6f7e9b;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.admin-stats {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.admin-stat {
+    min-width: 118px;
+    padding: 12px 14px;
+    border: 1px solid #e2ebf7;
+    border-radius: 14px;
+    background: #f8fbff;
+}
+
+.admin-stat__value,
+.admin-stat__label {
+    display: block;
+}
+
+.admin-stat__value {
+    font-size: 22px;
+    line-height: 1;
+    font-weight: 700;
+    color: #214c89;
+}
+
+.admin-stat__label {
+    margin-top: 5px;
+    font-size: 12px;
+    color: #6d7b96;
+}
+
+.admin-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+.admin-search {
+    width: min(420px, 100%);
+    height: 44px;
+    border: 1px solid #d8e1f0;
+    border-radius: 12px;
+    background: #fff;
+    padding: 0 14px;
+    font-size: 14px;
+    color: #22324f;
+    outline: none;
+}
+
+.admin-search:focus,
+.admin-roleSelect:focus {
+    border-color: #214c89;
+    box-shadow: 0 0 0 3px rgba(33, 76, 137, 0.12);
+}
+
+.admin-message {
+    color: #237a43;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.admin-tableWrap {
+    overflow-x: auto;
+    border: 1px solid #e2e8f3;
+    border-radius: 16px;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 760px;
+}
+
+.admin-table th,
+.admin-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #e2e8f3;
+    text-align: left;
+    vertical-align: middle;
+    font-size: 14px;
+    color: #22324f;
+}
+
+.admin-table th {
+    background: #f8fbff;
+    color: #4e5f80;
+    font-size: 12px;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.admin-table tr:last-child td {
+    border-bottom: none;
+}
+
+.admin-user {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.admin-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--input);
+    color: var(--prof-purple);
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.admin-user__name {
+    font-weight: 600;
+}
+
+.admin-role {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 30px;
+    padding: 0 10px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.admin-role--student {
+    background: #f3f5f9;
+    color: #64748b;
+}
+
+.admin-role--operator {
+    background: #eef6ff;
+    color: #214c89;
+}
+
+.admin-role--admin {
+    background: #f0ecff;
+    color: #5d35b1;
+}
+
+.admin-roleSelect {
+    width: 210px;
+    height: 40px;
+    border: 1px solid #d8e1f0;
+    border-radius: 12px;
+    background: #fff;
+    padding: 0 12px;
+    font-size: 14px;
+    color: #22324f;
+    outline: none;
+}
+
+.admin-roleSelect:disabled {
+    opacity: 0.7;
+    cursor: default;
+}
+
+.admin-empty {
+    padding: 24px;
+    color: #6f7e9b;
+    font-size: 14px;
+}
+
+@media (max-width: 760px) {
+    .admin-panel {
+        width: min(100% - 28px, 1680px);
+        padding: 18px;
+        border-radius: 16px;
+    }
+
+    .admin-panel__head,
+    .admin-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .admin-stats {
+        justify-content: flex-start;
+    }
+
+    .admin-title {
+        font-size: 24px;
+    }
+}
