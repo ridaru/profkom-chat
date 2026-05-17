@@ -1,5 +1,3 @@
-import { hashPassword } from "../lib/crypto";
-
 export type UserRole = "student" | "operator" | "admin";
 
 export interface User {
@@ -7,8 +5,6 @@ export interface User {
     fullName: string;
     email: string;
     role: UserRole;
-    passSaltB64: string;
-    passHashB64: string;
     createdAt: string;
     studentCard?: string;
     studyForm?: string;
@@ -53,6 +49,7 @@ const API_BASE = import.meta.env.VITE_API_URL ?? "/api";
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
     const response = await fetch(`${API_BASE}${path}`, {
         ...init,
+        credentials: "include",
         headers: {
             "Content-Type": "application/json",
             ...init?.headers,
@@ -82,7 +79,7 @@ class QueryApi<T extends { id: string }> {
         table: TableApi<T>,
         field: keyof T,
         value: unknown,
-        filters: Filter<T>[] = []
+        filters: Filter<T>[] = [],
     ) {
         this.table = table;
         this.field = field;
@@ -194,46 +191,5 @@ export const db = {
 };
 
 export async function seedDatabase() {
-    const count = await db.users.count();
-    if (count > 0) return;
-
-    const now = new Date().toISOString();
-
-    const mkUser = async (
-        fullName: string,
-        email: string,
-        role: UserRole,
-        password: string,
-        profile?: Pick<User, "studentCard" | "studyForm" | "group" | "course" | "educationLevel">
-    ): Promise<User> => {
-        const { saltB64, hashB64 } = await hashPassword(password);
-        return {
-            id: crypto.randomUUID(),
-            fullName,
-            email: email.toLowerCase().trim(),
-            role,
-            passSaltB64: saltB64,
-            passHashB64: hashB64,
-            createdAt: now,
-            ...profile,
-        };
-    };
-
-    const operator = await mkUser("РћРїРµСЂР°С‚РѕСЂ 1", "operator@stankin.ru", "operator", "123456");
-    const admin = await mkUser("РђРґРјРёРЅ", "admin@stankin.ru", "admin", "123456");
-    const student = await mkUser(
-        "Журавлева Ирина Александровна",
-        "student@stankin.ru",
-        "student",
-        "st123456",
-        {
-            studentCard: "st123456",
-            studyForm: "Очная",
-            group: "ИДБ-22-11",
-            course: "4",
-            educationLevel: "Бакалавриат",
-        }
-    );
-
-    await db.users.bulkAdd([operator, admin, student]);
+    return Promise.resolve();
 }

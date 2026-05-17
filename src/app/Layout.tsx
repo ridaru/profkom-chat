@@ -7,7 +7,7 @@ const Layout = () => {
     const navigate = useNavigate();
 
     const handleLogout = () => {
-        logout();
+        void logout();
         navigate("/");
     };
 

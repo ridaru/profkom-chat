@@ -1,19 +1,23 @@
-import { create } from "zustand";
+import { authClient } from "../../lib/auth-client";
+import type { User } from "../../db/db";
 
 interface AuthState {
     userId: string | null;
-    login: (id: string) => void;
-    logout: () => void;
+    user: User | null;
+    isPending: boolean;
+    logout: () => Promise<void>;
 }
 
-export const useAuth = create<AuthState>((set) => ({
-    userId: localStorage.getItem("userId"),
-    login: (id) => {
-        localStorage.setItem("userId", id);
-        set({ userId: id });
-    },
-    logout: () => {
-        localStorage.removeItem("userId");
-        set({ userId: null });
-    },
-}));
+export function useAuth<T>(selector: (state: AuthState) => T): T {
+    const session = authClient.useSession();
+
+    return selector({
+        userId: session.data?.user.id ?? null,
+        user: (session.data?.user as User | undefined) ?? null,
+        isPending: session.isPending,
+        logout: async () => {
+            await authClient.signOut();
+            await session.refetch();
+        },
+    });
+}

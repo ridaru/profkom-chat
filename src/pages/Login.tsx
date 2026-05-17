@@ -1,13 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { db, seedDatabase } from "../db/db";
-import { verifyPassword } from "../lib/crypto";
-import { useAuth } from "../features/auth/store";
+import { authClient } from "../lib/auth-client";
 import "../styles/auth.css";
 
 const LoginPage = () => {
     const navigate = useNavigate();
-    const login = useAuth((s) => s.login);
 
     const [identifier, setIdentifier] = useState("");
     const [password, setPassword] = useState("");
@@ -17,39 +14,43 @@ const LoginPage = () => {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const init = async () => {
-            try {
-                await seedDatabase();
-            } finally {
-                setBoot(false);
-            }
-        };
-        void init();
+        setBoot(false);
     }, []);
 
-    const onSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const onSubmit = async (event: React.FormEvent) => {
+        event.preventDefault();
         setError(null);
         setLoading(true);
 
         try {
             const loginValue = identifier.toLowerCase().trim();
-            const user = loginValue.includes("@")
-                ? await db.users.where("email").equals(loginValue).first()
-                : await db.users.where("studentCard").equals(loginValue).first();
+            let email = loginValue;
 
-            if (!user) {
-                setError("Пользователь не найден");
+            if (!loginValue.includes("@")) {
+                const response = await fetch(
+                    `/api/auth/lookup-student?studentCard=${encodeURIComponent(loginValue)}`,
+                    { credentials: "include" },
+                );
+
+                if (!response.ok) {
+                    setError("Пользователь не найден");
+                    return;
+                }
+
+                const payload = await response.json() as { email: string };
+                email = payload.email;
+            }
+
+            const { error: signInError } = await authClient.signIn.email({
+                email,
+                password,
+            });
+
+            if (signInError) {
+                setError("Неверный логин или пароль");
                 return;
             }
 
-            const ok = await verifyPassword(password, user.passSaltB64, user.passHashB64);
-            if (!ok) {
-                setError("Неверный пароль");
-                return;
-            }
-
-            login(user.id);
             navigate("/app");
         } catch (err) {
             setError(err instanceof Error ? err.message : "Ошибка входа");
@@ -64,12 +65,12 @@ const LoginPage = () => {
                 <div className="auth__head">
                     <div className="auth__title">Вход</div>
                     <div className="auth__subtitle">
-                        Авторизация доступна только студентам и сотрудникам МГТУ «СТАНКИН»
+                        Авторизация доступна студентам и сотрудникам МГТУ «СТАНКИН»
                     </div>
                 </div>
 
                 {boot ? (
-                    <div className="auth__subtitle">Инициализация…</div>
+                    <div className="auth__subtitle">Инициализация...</div>
                 ) : (
                     <form className="auth__form" onSubmit={onSubmit}>
                         <label className="auth__label">
@@ -77,7 +78,7 @@ const LoginPage = () => {
                             <input
                                 className="auth__input"
                                 value={identifier}
-                                onChange={(e) => setIdentifier(e.target.value)}
+                                onChange={(event) => setIdentifier(event.target.value)}
                                 autoComplete="username"
                                 placeholder="Email или номер студенческого билета"
                             />
@@ -89,7 +90,7 @@ const LoginPage = () => {
                                 className="auth__input"
                                 type="password"
                                 value={password}
-                                onChange={(e) => setPassword(e.target.value)}
+                                onChange={(event) => setPassword(event.target.value)}
                                 autoComplete="current-password"
                                 placeholder="••••••••"
                             />
@@ -98,9 +99,8 @@ const LoginPage = () => {
                         {error && <div className="auth__error">{error}</div>}
 
                         <button className="auth__btn" disabled={loading}>
-                            {loading ? "Входим…" : "Войти"}
+                            {loading ? "Входим..." : "Войти"}
                         </button>
-
                     </form>
                 )}
             </div>
