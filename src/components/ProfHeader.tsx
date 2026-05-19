@@ -50,6 +50,7 @@ export default function ProfHeader() {
     const role = currentUser?.role ?? "student";
     const avatarUrl = "";
     const isAdmin = currentUser?.role === "admin";
+    const isStaff = currentUser?.role === "operator" || currentUser?.role === "admin";
 
     const initials = useMemo(() => getInitials(fullName), [fullName]);
 
@@ -99,6 +100,11 @@ export default function ProfHeader() {
     const handleAdmin = () => {
         setMenuOpen(false);
         navigate("/app/admin");
+    };
+
+    const handleAnalytics = () => {
+        setMenuOpen(false);
+        navigate("/app/analytics");
     };
 
     return (
@@ -192,6 +198,11 @@ export default function ProfHeader() {
                                     {isAdmin && (
                                         <button type="button" className="ph__userMenuItem" onClick={handleAdmin}>
                                             Административная панель
+                                        </button>
+                                    )}
+                                    {isStaff && (
+                                        <button type="button" className="ph__userMenuItem" onClick={handleAnalytics}>
+                                            Аналитика обращений
                                         </button>
                                     )}
                                     <button type="button" className="ph__userMenuItem ph__userMenuItem--danger" onClick={handleLogout}>

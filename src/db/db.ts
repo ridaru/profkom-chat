@@ -18,16 +18,18 @@ export interface User {
 }
 
 export type TicketStatus = "new" | "in_progress" | "closed";
+export type TicketPriority = "low" | "normal" | "high";
 
 export interface Ticket {
     id: string;
     studentId: string;
     topic: string;
     type: string;
+    priority: TicketPriority;
     status: TicketStatus;
     createdAt: string;
     updatedAt: string;
-    assignedTo?: string;
+    assignedTo?: string | null;
     formData: unknown;
 }
 
@@ -41,7 +43,60 @@ export interface Message {
     isReadByOperator: boolean;
 }
 
-type ResourceName = "users" | "tickets" | "messages";
+export interface TicketEvent {
+    id: string;
+    ticketId: string;
+    actorId: string;
+    eventType: string;
+    message: string;
+    createdAt: string;
+    metadata: Record<string, unknown>;
+}
+
+export interface PriorityRule {
+    id: string;
+    topic: string;
+    type: string | null;
+    priority: TicketPriority;
+    description: string;
+    updatedAt: string;
+    updatedBy: string | null;
+}
+
+export interface ResponseTemplate {
+    id: string;
+    title: string;
+    preview: string;
+    text: string;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+    updatedBy: string | null;
+}
+
+export type AnalyticsBucket = {
+    label: string;
+    count: number;
+};
+
+export type TicketAnalytics = {
+    summary: {
+        total: number;
+        new: number;
+        inProgress: number;
+        closed: number;
+    };
+    byTopic: AnalyticsBucket[];
+    byStatus: AnalyticsBucket[];
+    byPriority: AnalyticsBucket[];
+    workload: AnalyticsBucket[];
+    timings: {
+        avgFirstResponseSeconds: number | null;
+        avgCloseSeconds: number | null;
+    };
+};
+
+type ResourceName = "users" | "tickets" | "messages" | "ticket-events" | "priority-rules" | "response-templates";
 type Filter<T> = (item: T) => boolean;
 
 const API_BASE = import.meta.env.VITE_API_URL ?? "/api";
@@ -182,12 +237,24 @@ class TableApi<T extends { id: string }> {
             body: JSON.stringify(patch),
         });
     }
+
+    async delete(id: string) {
+        return api<void>(`/${this.resource}/${encodeURIComponent(id)}`, {
+            method: "DELETE",
+        });
+    }
 }
 
 export const db = {
     users: new TableApi<User>("users"),
     tickets: new TableApi<Ticket>("tickets"),
     messages: new TableApi<Message>("messages"),
+    ticketEvents: new TableApi<TicketEvent>("ticket-events"),
+    priorityRules: new TableApi<PriorityRule>("priority-rules"),
+    responseTemplates: new TableApi<ResponseTemplate>("response-templates"),
+    analytics: {
+        tickets: () => api<TicketAnalytics>("/analytics/tickets"),
+    },
 };
 
 export async function seedDatabase() {

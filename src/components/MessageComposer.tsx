@@ -1,42 +1,38 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "../styles/messages.css";
-import type { UserRole } from "../db/db";
+import { db, type ResponseTemplate, type UserRole } from "../db/db";
 
 type Props = {
     onSend: (text: string) => Promise<void> | void;
     role: UserRole;
 };
 
-const operatorTemplates = [
-    {
-        label: "Принято в работу",
-        text: "Здравствуйте! Ваше обращение принято в работу.",
-    },
-    {
-        label: "Приложите документы",
-        text: "Пожалуйста, приложите недостающие документы к обращению.",
-    },
-    {
-        label: "Уточните детали",
-        text: "Уточните, пожалуйста, детали по вашему обращению.",
-    },
-    {
-        label: "Документы проверены",
-        text: "Документы проверены, обращение передано на дальнейшее рассмотрение.",
-    },
-    {
-        label: "Обращение обработано",
-        text: "Ваше обращение обработано. При необходимости можете написать в этом чате.",
-    },
-];
-
 const MessageComposer = ({ onSend, role }: Props) => {
     const [text, setText] = useState("");
     const [previewText, setPreviewText] = useState<string | null>(null);
     const [sending, setSending] = useState(false);
+    const [templates, setTemplates] = useState<ResponseTemplate[]>([]);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     const showTemplates = role !== "student";
     const visibleText = previewText ?? text;
+
+    useEffect(() => {
+        if (!showTemplates) return;
+
+        let alive = true;
+        void db.responseTemplates
+            .toArray()
+            .then((items) => {
+                if (alive) setTemplates(items.filter((item) => item.isActive));
+            })
+            .catch(() => {
+                if (alive) setTemplates([]);
+            });
+
+        return () => {
+            alive = false;
+        };
+    }, [showTemplates]);
 
     const resizeTextarea = (textarea: HTMLTextAreaElement) => {
         const maxHeight = 140;
@@ -100,11 +96,11 @@ const MessageComposer = ({ onSend, role }: Props) => {
 
     return (
         <div className="composer-wrap">
-            {showTemplates && (
+            {showTemplates && templates.length > 0 && (
                 <div className="composer-templates" aria-label="Шаблоны ответов">
-                    {operatorTemplates.map((template) => (
+                    {templates.map((template) => (
                         <button
-                            key={template.label}
+                            key={template.id}
                             type="button"
                             className="composer-template"
                             onMouseEnter={() => previewTemplate(template.text)}
@@ -112,8 +108,9 @@ const MessageComposer = ({ onSend, role }: Props) => {
                             onFocus={() => previewTemplate(template.text)}
                             onBlur={clearPreview}
                             onClick={() => applyTemplate(template.text)}
+                            title={template.preview}
                         >
-                            {template.label}
+                            {template.title}
                         </button>
                     ))}
                 </div>

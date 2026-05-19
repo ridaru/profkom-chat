@@ -756,6 +756,7 @@ ${text}
                     studentId: currentUserId,
                     topic: vals.topic,
                     type,
+                    priority: "normal",
                     status: "new",
                     createdAt: now,
                     updatedAt: now,

@@ -19,6 +19,9 @@ const pool = new Pool({
 async function dropLegacyTables() {
     await pool.query(`
         drop table if exists messages cascade;
+        drop table if exists ticket_events cascade;
+        drop table if exists priority_rules cascade;
+        drop table if exists response_templates cascade;
         drop table if exists tickets cascade;
         drop table if exists verification cascade;
         drop table if exists account cascade;
@@ -52,6 +55,7 @@ async function createAppTables() {
             student_id text not null references users(id) on delete cascade,
             topic text not null,
             ticket_type text not null,
+            priority text not null default 'normal' check (priority in ('low', 'normal', 'high')),
             status text not null check (status in ('new', 'in_progress', 'closed')),
             created_at timestamptz not null,
             updated_at timestamptz not null,
@@ -69,11 +73,46 @@ async function createAppTables() {
             is_read_by_operator boolean not null default false
         );
 
+        create table if not exists ticket_events (
+            id text primary key,
+            ticket_id text not null references tickets(id) on delete cascade,
+            actor_id text not null references users(id) on delete cascade,
+            event_type text not null,
+            message text not null,
+            created_at timestamptz not null,
+            metadata jsonb not null default '{}'::jsonb
+        );
+
+        create table if not exists priority_rules (
+            id text primary key,
+            topic text not null,
+            ticket_type text,
+            priority text not null default 'normal' check (priority in ('low', 'normal', 'high')),
+            description text not null default '',
+            updated_at timestamptz not null,
+            updated_by text references users(id) on delete set null,
+            unique (topic, ticket_type)
+        );
+
+        create table if not exists response_templates (
+            id text primary key,
+            title text not null,
+            preview text not null default '',
+            text text not null,
+            is_active boolean not null default true,
+            created_at timestamptz not null,
+            updated_at timestamptz not null,
+            updated_by text references users(id) on delete set null
+        );
+
         create index if not exists idx_users_email on users(email);
         create index if not exists idx_users_student_card on users(student_card);
         create index if not exists idx_tickets_student_id on tickets(student_id);
         create index if not exists idx_tickets_updated_at on tickets(updated_at);
         create index if not exists idx_messages_ticket_id on messages(ticket_id);
+        create index if not exists idx_ticket_events_ticket_id on ticket_events(ticket_id);
+        create index if not exists idx_priority_rules_topic on priority_rules(topic);
+        create index if not exists idx_response_templates_active on response_templates(is_active);
     `);
 }
 
@@ -145,11 +184,52 @@ async function seedUsers() {
     });
 }
 
+async function seedPriorityRules() {
+    const now = new Date().toISOString();
+    const defaults = [
+        ["Материальная поддержка", "Финансы", "high", "Заявления на матпомощь зависят от оснований, подтверждающих документов, квот и сроков подачи."],
+        ["Социальная поддержка", "Социальная", "high", "Социальные выплаты и льготы требуют быстрой проверки категории и документов."],
+        ["Справка/документы", "Общее", "normal", "Документальные вопросы важны, но обычно не требуют немедленной обработки."],
+        ["Вопрос по стипендии", "Общее", "normal", "Стипендиальные вопросы обрабатываются планово, если не связаны с социальным основанием."],
+        ["Общежитие", "Общее", "normal", "Вопросы проживания требуют контроля, но чаще обрабатываются в общей очереди."],
+        ["Другое", "Общее", "low", "Неклассифицированные консультации можно разбирать после профильных обращений."],
+    ] as const;
+
+    for (const [topic, type, priority, description] of defaults) {
+        await pool.query(
+            `insert into priority_rules (id, topic, ticket_type, priority, description, updated_at)
+             values ($1, $2, $3, $4, $5, $6)`,
+            [crypto.randomUUID(), topic, type, priority, description, now],
+        );
+    }
+}
+
+async function seedResponseTemplates() {
+    const now = new Date().toISOString();
+    const defaults = [
+        ["Принято в работу", "Сообщает студенту, что обращение принято оператором.", "Здравствуйте! Ваше обращение принято в работу."],
+        ["Приложите документы", "Запрашивает недостающие подтверждающие документы.", "Пожалуйста, приложите недостающие документы к обращению."],
+        ["Уточните детали", "Просит студента подробнее описать ситуацию.", "Уточните, пожалуйста, детали по вашему обращению."],
+        ["Документы проверены", "Подтверждает проверку документов и передачу дальше.", "Документы проверены, обращение передано на дальнейшее рассмотрение."],
+        ["Обращение обработано", "Сообщает о завершении обработки обращения.", "Ваше обращение обработано. При необходимости можете написать в этом чате."],
+    ] as const;
+
+    for (const [title, preview, text] of defaults) {
+        await pool.query(
+            `insert into response_templates (id, title, preview, text, is_active, created_at, updated_at)
+             values ($1, $2, $3, $4, true, $5, $5)`,
+            [crypto.randomUUID(), title, preview, text, now],
+        );
+    }
+}
+
 try {
     await dropLegacyTables();
     runBetterAuthMigration();
     await createAppTables();
     await seedUsers();
+    await seedPriorityRules();
+    await seedResponseTemplates();
     console.log("Database reset complete.");
 } finally {
     await pool.end();

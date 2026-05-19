@@ -79,6 +79,9 @@
 .badge--new{ background: rgba(111,55,255,.10); border-color: rgba(111,55,255,.18); }
 .badge--in_progress{ background: rgba(0,0,0,.04); }
 .badge--closed{ background: rgba(0,0,0,.03); opacity: .85; }
+.badge--priority-low{ background: #eef8f1; border-color: #cdebd5; color: #237a43; }
+.badge--priority-normal{ background: #eef6ff; border-color: #d5e8ff; color: #214c89; }
+.badge--priority-high{ background: #fff2f2; border-color: #ffd2d2; color: #c53939; }
 
 .ticket-list-wrap {
     display: flex;

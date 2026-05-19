@@ -18,6 +18,12 @@ const statusRu: Record<Ticket["status"], string> = {
     closed: "Закрыто",
 };
 
+const priorityRu: Record<Ticket["priority"], string> = {
+    low: "Низкий",
+    normal: "Обычный",
+    high: "Высокий",
+};
+
 type StatusFilter = "all" | Ticket["status"];
 
 const statusFilters: { value: StatusFilter; label: string }[] = [
@@ -76,6 +82,9 @@ const TicketRow = ({
 
                 <div className="ticket-row__badges">
                     {unread > 0 && <span className="badge badge--unread">{unread}</span>}
+                    <span className={`badge badge--priority badge--priority-${t.priority}`}>
+                        {priorityRu[t.priority]}
+                    </span>
                     <span className={`badge badge--status badge--${t.status}`}>
                         {statusRu[t.status]}
                     </span>
@@ -108,6 +117,7 @@ const TicketList = ({ tickets, selectedId, onSelect, role }: Props) => {
                     ? true
                     : t.topic.toLowerCase().includes(query) ||
                       t.type.toLowerCase().includes(query) ||
+                      priorityRu[t.priority].toLowerCase().includes(query) ||
                       statusRu[t.status].toLowerCase().includes(query);
 
             return matchesStatus && matchesSearch;

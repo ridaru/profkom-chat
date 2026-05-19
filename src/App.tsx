@@ -7,6 +7,7 @@ import LoginPage from "./pages/Login";
 import StudentPage from "./pages/Student";
 import ProfilePage from "./pages/ProfilePage";
 import AdminPage from "./pages/AdminPage";
+import AnalyticsPage from "./pages/AnalyticsPage";
 
 export default function App() {
     return (
@@ -40,6 +41,15 @@ export default function App() {
                         element={
                             <ProtectedRoute>
                                 <AdminPage />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/app/analytics"
+                        element={
+                            <ProtectedRoute>
+                                <AnalyticsPage />
                             </ProtectedRoute>
                         }
                     />

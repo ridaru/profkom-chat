@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { db, type Message, type Ticket, type UserRole } from "../db/db";
+import { db, type Message, type Ticket, type TicketEvent, type TicketPriority, type User, type UserRole } from "../db/db";
 import MessageList from "./MessageList";
 import MessageComposer from "./MessageComposer";
 import CreateTicketModal from "./CreateTicketModal";
@@ -23,6 +23,18 @@ type DocumentAttachment = {
     lastModified: number;
     dataUrl: string;
 };
+
+const priorityRu: Record<TicketPriority, string> = {
+    low: "Низкий",
+    normal: "Обычный",
+    high: "Высокий",
+};
+
+const priorityOptions: { value: TicketPriority; label: string }[] = [
+    { value: "low", label: priorityRu.low },
+    { value: "normal", label: priorityRu.normal },
+    { value: "high", label: priorityRu.high },
+];
 
 const statusRu: Record<Ticket["status"], string> = {
     new: "Новое",
@@ -362,17 +374,30 @@ function isDemoSignature(signature: Signature): signature is Signature & DemoSig
 const TicketDetails = ({ ticketId, currentUserId, role, onChanged }: Props) => {
     const [ticket, setTicket] = useState<Ticket | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
+    const [events, setEvents] = useState<TicketEvent[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
+    const [staffUsers, setStaffUsers] = useState<User[]>([]);
     const [statusBusy, setStatusBusy] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
     const [signatureStatus, setSignatureStatus] = useState<SignatureStatus>("none");
 
     const reload = async () => {
-        const t = await db.tickets.get(ticketId);
+        const [t, eventRows = [], users = []] = await Promise.all([
+            db.tickets.get(ticketId),
+            db.ticketEvents.where("ticketId").equals(ticketId).toArray(),
+            role === "student" ? Promise.resolve([] as User[]) : db.users.toArray(),
+        ]);
         setTicket(t ?? null);
+        const safeEvents = Array.isArray(eventRows) ? eventRows : [];
+        safeEvents.sort((a, b) => (a.createdAt > b.createdAt ? 1 : -1));
+        setEvents(safeEvents);
+        setUsers(users);
+        setStaffUsers(users.filter((user) => user.role === "operator" || user.role === "admin"));
 
         const msgs = await db.messages.where("ticketId").equals(ticketId).toArray();
-        msgs.sort((a, b) => (a.createdAt > b.createdAt ? 1 : -1));
-        setMessages(msgs);
+        const safeMessages = Array.isArray(msgs) ? msgs : [];
+        safeMessages.sort((a, b) => (a.createdAt > b.createdAt ? 1 : -1));
+        setMessages(safeMessages);
     };
 
     useEffect(() => {
@@ -408,9 +433,6 @@ const TicketDetails = ({ ticketId, currentUserId, role, onChanged }: Props) => {
             isReadByOperator: role !== "student",
         });
 
-        const t = await db.tickets.get(ticketId);
-        if (t) await db.tickets.put({ ...t, updatedAt: now });
-
         await reload();
     };
 
@@ -426,6 +448,7 @@ const TicketDetails = ({ ticketId, currentUserId, role, onChanged }: Props) => {
                 updatedAt: now,
             });
             await reload();
+            onChanged?.();
         } finally {
             setStatusBusy(false);
         }
@@ -442,6 +465,41 @@ const TicketDetails = ({ ticketId, currentUserId, role, onChanged }: Props) => {
                 updatedAt: now,
             });
             await reload();
+            onChanged?.();
+        } finally {
+            setStatusBusy(false);
+        }
+    };
+
+    const handlePriorityChange = async (priority: TicketPriority) => {
+        if (!ticket || ticket.priority === priority) return;
+
+        const now = new Date().toISOString();
+        setStatusBusy(true);
+        try {
+            await db.tickets.update(ticket.id, {
+                priority,
+                updatedAt: now,
+            });
+            await reload();
+            onChanged?.();
+        } finally {
+            setStatusBusy(false);
+        }
+    };
+
+    const handleAssigneeChange = async (assignedTo: string | null) => {
+        if (!ticket || (ticket.assignedTo ?? null) === assignedTo) return;
+
+        const now = new Date().toISOString();
+        setStatusBusy(true);
+        try {
+            await db.tickets.update(ticket.id, {
+                assignedTo,
+                updatedAt: now,
+            });
+            await reload();
+            onChanged?.();
         } finally {
             setStatusBusy(false);
         }
@@ -493,8 +551,10 @@ const TicketDetails = ({ ticketId, currentUserId, role, onChanged }: Props) => {
 
     const ms = form.materialSupport;
     const ss = form.socialSupport;
-    const canManage = role === "admin";
+    const canManage = role === "operator" || role === "admin";
     const isClosed = ticket.status === "closed";
+    const assignedUser = staffUsers.find((user) => user.id === ticket.assignedTo);
+    const getEventActor = (actorId: string) => users.find((user) => user.id === actorId)?.fullName ?? (actorId === currentUserId ? "Вы" : "Пользователь");
 
     return (
         <div className="td">
@@ -503,6 +563,8 @@ const TicketDetails = ({ ticketId, currentUserId, role, onChanged }: Props) => {
                     <div className="td-head__title">{title}</div>
                     <div className="td-head__meta">
                         <span className={`td-badge td-badge--${ticket.status}`}>{statusRu[ticket.status]}</span>
+                        <span className={`td-badge td-badge--priority-${ticket.priority}`}>{priorityRu[ticket.priority]}</span>
+                        <span>Ответственный: {assignedUser?.fullName ?? "Не назначен"}</span>
                         <span>Создано: {created}</span>
                         <span>Обновлено: {updated}</span>
                     </div>
@@ -510,6 +572,37 @@ const TicketDetails = ({ ticketId, currentUserId, role, onChanged }: Props) => {
 
                 {canManage && !isClosed && (
                     <div className="td-head__actions">
+                        <label className="td-manage">
+                            <span>Приоритет</span>
+                            <select
+                                value={ticket.priority}
+                                onChange={(event) => void handlePriorityChange(event.target.value as TicketPriority)}
+                                disabled={statusBusy}
+                            >
+                                {priorityOptions.map((item) => (
+                                    <option key={item.value} value={item.value}>
+                                        {item.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+
+                        <label className="td-manage">
+                            <span>Ответственный</span>
+                            <select
+                                value={ticket.assignedTo ?? ""}
+                                onChange={(event) => void handleAssigneeChange(event.target.value || null)}
+                                disabled={statusBusy}
+                            >
+                                <option value="">Не назначен</option>
+                                {staffUsers.map((user) => (
+                                    <option key={user.id} value={user.id}>
+                                        {user.fullName}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+
                         {ticket.status === "new" ? (
                             <button
                                 type="button"
@@ -556,6 +649,8 @@ const TicketDetails = ({ ticketId, currentUserId, role, onChanged }: Props) => {
 
                     {form.title && <InfoRow label="Заголовок" value={form.title} />}
                     {form.description && <InfoRow label="Описание" value={form.description} />}
+                    <InfoRow label="Приоритет" value={priorityRu[ticket.priority]} />
+                    <InfoRow label="Ответственный" value={assignedUser?.fullName ?? "Не назначен"} />
 
                     {ms && (
                         <>
@@ -646,6 +741,30 @@ const TicketDetails = ({ ticketId, currentUserId, role, onChanged }: Props) => {
                             </div>
                         </>
                     )}
+
+                    <div className="td-info__sep" />
+                    <div className="td-info__block">
+                        <div className="td-info__blockTitle">История действий</div>
+                        {events.length === 0 ? (
+                            <div className="td-history__empty">История пока пуста.</div>
+                        ) : (
+                            <ol className="td-history">
+                                {events.map((event) => (
+                                    <li className="td-history__item" key={event.id}>
+                                        <div className="td-history__dot" aria-hidden="true" />
+                                        <div className="td-history__body">
+                                            <div className="td-history__message">{event.message}</div>
+                                            <div className="td-history__meta">
+                                                {format(new Date(event.createdAt), "dd.MM.yyyy HH:mm", { locale: ru })}
+                                                {" · "}
+                                                {getEventActor(event.actorId)}
+                                            </div>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ol>
+                        )}
+                    </div>
                 </section>
 
                 {/* Правая колонка — чат */}
